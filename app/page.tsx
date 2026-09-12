@@ -18,6 +18,7 @@ import { WeeklyForecast } from '@/components/WeeklyForecast'
 import { OtherCities } from '@/components/OtherCities'
 import { AuthControl } from '@/components/AuthControl'
 import { SavedLocations } from '@/components/SavedLocations'
+import { SettingsModal } from '@/components/SettingsModal'
 import { useSavedLocations } from '@/lib/useSavedLocations'
 import {
   applyTemperatureUnit,
@@ -93,7 +94,29 @@ export default function Page() {
   const [authUser, setAuthUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const signOutHandlerRef = useRef<(() => Promise<void>) | null>(null)
+
+  // Hydrate temperature unit from client-side persistent storage
+  useEffect(() => {
+    try {
+      const savedUnit = localStorage.getItem('wi_temperature_unit')
+      if (savedUnit === '°C' || savedUnit === '°F') {
+        setUnit(savedUnit)
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [])
+
+  const handleUnitChange = useCallback((nextUnit: TemperatureUnit) => {
+    setUnit(nextUnit)
+    try {
+      localStorage.setItem('wi_temperature_unit', nextUnit)
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [])
 
   const handleSignOutReady = useCallback((fn: () => Promise<void>) => {
     signOutHandlerRef.current = fn
@@ -105,6 +128,14 @@ export default function Page() {
 
   const handleOpenAuth = useCallback(() => {
     setAuthModalOpen(true)
+  }, [])
+
+  const handleOpenSettings = useCallback(() => {
+    setSettingsModalOpen(true)
+  }, [])
+
+  const handleCloseSettings = useCallback(() => {
+    setSettingsModalOpen(false)
   }, [])
 
   const savedState = useSavedLocations(authUser)
@@ -481,6 +512,8 @@ export default function Page() {
         onNavigatePlaces={() => {
           document.querySelector('.saved-locations')?.scrollIntoView({ behavior: 'smooth' })
         }}
+        onOpenSettings={handleOpenSettings}
+        isSettingsOpen={settingsModalOpen}
       />
       <section className="content-shell">
         <MobileNav
@@ -490,10 +523,11 @@ export default function Page() {
           authLoading={authLoading}
           onOpenAuth={handleOpenAuth}
           onSignOut={handleSignOut}
+          onOpenSettings={handleOpenSettings}
         />
         <TopBar
           unit={unit}
-          onUnitChange={setUnit}
+          onUnitChange={handleUnitChange}
           onSelectLocation={handleSelectLocation}
           onUseCurrentLocation={handleUseCurrentLocation}
           isLocating={isLocating}
@@ -780,6 +814,16 @@ export default function Page() {
           </>
         )}
       </section>
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={handleCloseSettings}
+        unit={unit}
+        onUnitChange={handleUnitChange}
+        user={authUser}
+        onOpenAuth={handleOpenAuth}
+        onSignOut={handleSignOut}
+        currentLocation={location}
+      />
     </main>
   )
 }

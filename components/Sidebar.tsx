@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Grid2X2, MapPin, Bell, Activity, CloudSun, UserRound, LogOut } from 'lucide-react'
+import { Grid2X2, MapPin, Bell, Activity, CloudSun, UserRound, LogOut, Settings } from 'lucide-react'
 import type { User } from 'firebase/auth'
 
 const NAV_ITEMS: { Icon: typeof Grid2X2; id: string }[] = [
@@ -16,6 +16,8 @@ interface SidebarProps {
   onOpenAuth?: () => void
   onSignOut?: () => void
   onNavigatePlaces?: () => void
+  onOpenSettings?: () => void
+  isSettingsOpen?: boolean
 }
 
 export function Sidebar({
@@ -23,6 +25,8 @@ export function Sidebar({
   onOpenAuth,
   onSignOut,
   onNavigatePlaces,
+  onOpenSettings,
+  isSettingsOpen = false,
 }: SidebarProps) {
   const [activeNav, setActiveNav] = useState('dashboard')
 
@@ -59,28 +63,39 @@ export function Sidebar({
           </button>
         ))}
       </nav>
-      {user ? (
+      <div className="sidebar-bottom" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '13px', alignItems: 'center' }}>
         <button
           type="button"
-          className="nav-item bottom"
-          onClick={onSignOut}
-          aria-label="Sign out"
-          title={`Signed in: ${user.displayName || user.email}. Click to sign out.`}
-          style={{ background: 'var(--lavender)' }}
+          className={`nav-item ${isSettingsOpen ? 'active' : ''}`}
+          onClick={onOpenSettings}
+          aria-label="Settings"
+          title="Preferences & Settings"
         >
-          <LogOut size={19} />
+          <Settings size={19} />
         </button>
-      ) : (
-        <button
-          type="button"
-          className="nav-item bottom"
-          onClick={onOpenAuth}
-          aria-label="Sign in"
-          title="Sign in to your account"
-        >
-          <UserRound size={19} />
-        </button>
-      )}
+        {user ? (
+          <button
+            type="button"
+            className="nav-item"
+            onClick={onSignOut}
+            aria-label="Sign out"
+            title={`Signed in: ${user.displayName || user.email}. Click to sign out.`}
+            style={{ background: 'var(--lavender)' }}
+          >
+            <LogOut size={19} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="nav-item"
+            onClick={onOpenAuth}
+            aria-label="Sign in"
+            title="Sign in to your account"
+          >
+            <UserRound size={19} />
+          </button>
+        )}
+      </div>
     </aside>
   )
 }

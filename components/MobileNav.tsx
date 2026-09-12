@@ -10,6 +10,7 @@ interface MobileNavProps {
   authLoading?: boolean
   onOpenAuth?: () => void
   onSignOut?: () => void
+  onOpenSettings?: () => void
 }
 
 export function MobileNav({
@@ -19,6 +20,7 @@ export function MobileNav({
   authLoading = false,
   onOpenAuth,
   onSignOut,
+  onOpenSettings,
 }: MobileNavProps) {
   return (
     <nav className="mobile-nav" aria-label="Mobile navigation">
@@ -41,7 +43,7 @@ export function MobileNav({
           aria-label="Use current location"
           style={{ cursor: isLocating ? 'wait' : 'pointer' }}
         >
-          {isLocating ? <Loader2 size={17} className="animate-spin" /> : <Navigation size={17} />}
+          {isLocating ? <Loader2 size={18} className="animate-spin" /> : <Navigation size={18} />}
         </button>
 
         {authLoading ? (
@@ -52,7 +54,7 @@ export function MobileNav({
             disabled
             style={{ opacity: 0.7 }}
           >
-            <Loader2 size={17} className="animate-spin" />
+            <Loader2 size={18} className="animate-spin" />
           </button>
         ) : user ? (
           <button
@@ -63,7 +65,7 @@ export function MobileNav({
             title={`Signed in as ${user.displayName || user.email}. Tap to sign out.`}
             style={{ background: 'var(--lavender)' }}
           >
-            <LogOut size={16} />
+            <LogOut size={18} />
           </button>
         ) : (
           <button
@@ -73,18 +75,18 @@ export function MobileNav({
             aria-label="Sign in"
             title="Sign in to save locations"
           >
-            <UserRound size={17} />
+            <UserRound size={18} />
           </button>
         )}
 
         <button
           type="button"
           className="mobile-menu"
-          aria-label="Account / settings"
-          onClick={user ? onSignOut : onOpenAuth}
-          title={user ? `Signed in: ${user.email}. Tap to sign out.` : 'Sign in / Settings'}
+          aria-label="Settings"
+          onClick={onOpenSettings}
+          title="Open settings & preferences"
         >
-          <Settings size={17} />
+          <Settings size={18} />
         </button>
       </div>
     </nav>

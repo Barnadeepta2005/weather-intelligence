@@ -67,9 +67,18 @@ export function SavedLocations({
               type="button"
               onClick={onOpenAuth}
               className="account-sign-in"
-              style={{ height: '30px', padding: '0 10px', fontSize: '9px', boxShadow: '2px 2px 0 var(--ink)' }}
+              style={{
+                height: '32px',
+                minHeight: '32px',
+                padding: '0 12px',
+                fontSize: '10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '2px 2px 0 var(--ink)',
+              }}
             >
-              <UserRound size={12} />
+              <UserRound size={13} />
               <span>SIGN IN</span>
             </button>
           )}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, Loader2, LogIn, LogOut, UserRound, X } from 'lucide-react'
 import {
   browserLocalPersistence,
@@ -77,6 +78,7 @@ export function AuthControl({
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const isControlled = externalOpen !== undefined
   const open = isControlled ? externalOpen : internalOpen
@@ -91,6 +93,23 @@ export function AuthControl({
     },
     [isControlled, onOpenChange]
   )
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        setError(null)
+        setPassword('')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open, setOpen])
 
   const handleSignOut = useCallback(async () => {
     if (submitting || !isFirebaseConfigured) return
@@ -198,34 +217,36 @@ export function AuthControl({
   const userLabel = user?.displayName || user?.email || 'ACCOUNT'
 
   return (
-    <div className="auth-control">
-      {restoring ? (
-        <span className="auth-restoring">
-          <Loader2 size={13} className="animate-spin" /> ACCOUNT
-        </span>
-      ) : user ? (
-        <div className="account-signed-in">
-          <span title={user.email || undefined}>{userLabel}</span>
-          <button type="button" onClick={handleSignOut} disabled={submitting} aria-label="Sign out">
-            {submitting ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
-            <b>SIGN OUT</b>
+    <>
+      <div className="auth-control">
+        {restoring ? (
+          <span className="auth-restoring">
+            <Loader2 size={13} className="animate-spin" /> ACCOUNT
+          </span>
+        ) : user ? (
+          <div className="account-signed-in">
+            <span title={user.email || undefined}>{userLabel}</span>
+            <button type="button" onClick={handleSignOut} disabled={submitting} aria-label="Sign out">
+              {submitting ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
+              <b>SIGN OUT</b>
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="account-sign-in"
+            onClick={() => {
+              setOpen(true)
+              setError(null)
+            }}
+            aria-label="Sign in to your account"
+          >
+            <UserRound size={14} /> SIGN IN
           </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="account-sign-in"
-          onClick={() => {
-            setOpen(true)
-            setError(null)
-          }}
-          aria-label="Sign in to your account"
-        >
-          <UserRound size={14} /> SIGN IN
-        </button>
-      )}
+        )}
+      </div>
 
-      {open && (
+      {open && mounted && createPortal(
         <div className="auth-backdrop" role="presentation" onMouseDown={close}>
           <section
             className="auth-dialog"
@@ -310,8 +331,9 @@ export function AuthControl({
               </>
             )}
           </section>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   )
 }

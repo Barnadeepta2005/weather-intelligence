@@ -65,6 +65,7 @@ export function useSavedLocations(user: User | null) {
         setLoading(false)
       },
       (err) => {
+        console.error('[Firestore SavedLocations Snapshot Error]', err)
         setError(firestoreError(err))
         setLoading(false)
       }
@@ -102,6 +103,7 @@ export function useSavedLocations(user: User | null) {
       try {
         await setDoc(doc(getFirebaseFirestore(), 'users', user.uid, 'savedLocations', docId), payload)
       } catch (err) {
+        console.error('[Firestore Save Error]', err)
         setError(firestoreError(err))
       } finally {
         setSaving(false)
@@ -119,6 +121,7 @@ export function useSavedLocations(user: User | null) {
       try {
         await deleteDoc(doc(getFirebaseFirestore(), 'users', user.uid, 'savedLocations', id))
       } catch (err) {
+        console.error('[Firestore Remove Error]', err)
         setError(firestoreError(err))
       } finally {
         setRemovingId(null)
