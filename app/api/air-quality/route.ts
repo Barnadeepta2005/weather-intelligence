@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAirQuality } from '@/lib/air-quality/service'
+import { lastCpcbDiagnostic } from '@/lib/air-quality/india-cpcb'
 import { DEFAULT_COORDINATES } from '@/lib/open-meteo'
 
 export async function GET(request: NextRequest) {
@@ -40,11 +41,29 @@ export async function GET(request: NextRequest) {
       timezone: safeTimezone,
     })
 
+    const headers: Record<string, string> = {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    }
+
+    if (lastCpcbDiagnostic) {
+      headers['x-diag-api-key-present'] = String(lastCpcbDiagnostic.apiKeyPresent)
+      headers['x-diag-station'] = lastCpcbDiagnostic.stationAttempted || ''
+      headers['x-diag-elapsed-ms'] = String(lastCpcbDiagnostic.elapsedMs)
+      headers['x-diag-cpcb-status'] = lastCpcbDiagnostic.httpStatus !== null ? String(lastCpcbDiagnostic.httpStatus) : 'none'
+      headers['x-diag-response-ok'] = lastCpcbDiagnostic.responseOk !== null ? String(lastCpcbDiagnostic.responseOk) : 'none'
+      headers['x-diag-content-type'] = lastCpcbDiagnostic.contentType || 'none'
+      headers['x-diag-body-length'] = lastCpcbDiagnostic.bodyLength !== null ? String(lastCpcbDiagnostic.bodyLength) : 'none'
+      if (lastCpcbDiagnostic.errorName) {
+        headers['x-diag-error-name'] = lastCpcbDiagnostic.errorName
+      }
+      if (lastCpcbDiagnostic.errorMessage) {
+        headers['x-diag-error-message'] = lastCpcbDiagnostic.errorMessage
+      }
+    }
+
     return NextResponse.json(aqiData, {
       status: 200,
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=900',
-      },
+      headers,
     })
   } catch (err: any) {
     console.error('[API /api/air-quality] Error:', err?.message || err)

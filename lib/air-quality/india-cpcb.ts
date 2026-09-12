@@ -48,6 +48,21 @@ function parseLastUpdateToIso(dateStr?: string): string {
   return dateStr
 }
 
+export interface CpcbDiagnosticInfo {
+  apiKeyPresent: boolean
+  stationAttempted: string
+  startTimeIso: string
+  elapsedMs: number
+  httpStatus: number | null
+  responseOk: boolean | null
+  contentType: string | null
+  bodyLength: number | null
+  errorName: string | null
+  errorMessage: string | null
+}
+
+export let lastCpcbDiagnostic: CpcbDiagnosticInfo | null = null
+
 /**
  * Fetch official ground monitoring air quality for a specific CPCB station.
  * Returns null if the station data is corrupt, unavailable, or fails the CPCB minimum data criteria.
@@ -60,14 +75,30 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
     return cached.data
   }
 
-  const apiKey = getApiKey()
-  if (!apiKey) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(`[CPCB Provider] DATA_GOV_IN_API_KEY not configured. Station "${stationName}" falling back to model.`)
+  const startTime = Date.now()
+  const startTimeIso = new Date(startTime).toISOString()
+  const hasKey = Boolean(process.env.DATA_GOV_IN_API_KEY && process.env.DATA_GOV_IN_API_KEY.trim().length > 0)
+
+  console.log(`[CPCB Diag] Station attempt: "${stationName}", DATA_GOV_IN_API_KEY present: ${hasKey}, startTime: ${startTimeIso}`)
+
+  if (!hasKey) {
+    console.warn(`[CPCB Diag] Station "${stationName}" aborted: process.env.DATA_GOV_IN_API_KEY is missing or empty.`)
+    lastCpcbDiagnostic = {
+      apiKeyPresent: false,
+      stationAttempted: stationName,
+      startTimeIso,
+      elapsedMs: Date.now() - startTime,
+      httpStatus: null,
+      responseOk: null,
+      contentType: null,
+      bodyLength: null,
+      errorName: 'MissingApiKey',
+      errorMessage: 'process.env.DATA_GOV_IN_API_KEY is missing or empty in runtime environment',
     }
     return null
   }
 
+  const apiKey = getApiKey()!
   const endpoint =
     `https://api.data.gov.in/resource/${DATA_GOV_RESOURCE_ID}` +
     `?api-key=${apiKey}&format=json&limit=10&filters[station]=${encodeURIComponent(stationName)}`
@@ -81,6 +112,26 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
       },
     })
 
+    const elapsedMs = Date.now() - startTime
+    const contentType = res.headers.get('content-type')
+    const rawText = await res.text()
+    const bodyLength = rawText.length
+
+    console.log(`[CPCB Diag] Station "${stationName}": HTTP ${res.status}, ok: ${res.ok}, elapsed: ${elapsedMs}ms, contentType: "${contentType}", bodyLength: ${bodyLength}`)
+
+    lastCpcbDiagnostic = {
+      apiKeyPresent: true,
+      stationAttempted: stationName,
+      startTimeIso,
+      elapsedMs,
+      httpStatus: res.status,
+      responseOk: res.ok,
+      contentType,
+      bodyLength,
+      errorName: res.ok ? null : `HttpError${res.status}`,
+      errorMessage: res.ok ? null : `HTTP ${res.status} ${res.statusText || ''}`.trim(),
+    }
+
     if (!res.ok) {
       if (res.status === 429) {
         console.warn(`[CPCB Provider] Data.gov.in rate limit encountered for station "${stationName}".`)
@@ -90,10 +141,18 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
       return null
     }
 
-    const payload = await res.json()
+    let payload: any = null
+    try {
+      payload = JSON.parse(rawText)
+    } catch (parseErr: any) {
+      console.warn(`[CPCB Diag] Failed to parse JSON response for station "${stationName}": ${parseErr.message}`)
+      return null
+    }
+
     const records = payload?.records
 
     if (!Array.isArray(records) || records.length === 0) {
+      console.warn(`[CPCB Diag] Station "${stationName}" returned 0 records.`)
       return null
     }
 
@@ -192,7 +251,20 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
 
     return unified
   } catch (err: any) {
-    console.warn(`[CPCB Provider] Error fetching station "${stationName}":`, err?.message || err)
+    const elapsedMs = Date.now() - startTime
+    console.warn(`[CPCB Diag] Station "${stationName}" caught error: name=${err?.name || 'Error'}, message=${err?.message || String(err)}, elapsed=${elapsedMs}ms`)
+    lastCpcbDiagnostic = {
+      apiKeyPresent: hasKey,
+      stationAttempted: stationName,
+      startTimeIso,
+      elapsedMs,
+      httpStatus: null,
+      responseOk: null,
+      contentType: null,
+      bodyLength: null,
+      errorName: err?.name || 'Error',
+      errorMessage: err?.message || String(err),
+    }
     return null
   }
 }
