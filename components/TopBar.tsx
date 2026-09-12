@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Search, X, Navigation, Loader2, AlertTriangle } from 'lucide-react'
 import type { TemperatureUnit, SearchSuggestion, GeocodedLocation } from '@/lib/types'
+import type { ReactNode } from 'react'
 
 export interface TopBarProps {
   unit: TemperatureUnit
@@ -10,6 +11,7 @@ export interface TopBarProps {
   onSelectLocation: (location: {
     name: string
     country: string
+    countryCode?: string
     admin1?: string
     latitude: number
     longitude: number
@@ -18,6 +20,7 @@ export interface TopBarProps {
   onUseCurrentLocation: () => void
   isLocating?: boolean
   suggestions?: SearchSuggestion[]
+  authControl?: ReactNode
 }
 
 export function TopBar({
@@ -27,6 +30,7 @@ export function TopBar({
   onUseCurrentLocation,
   isLocating = false,
   suggestions = [],
+  authControl,
 }: TopBarProps) {
   const [query, setQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -122,6 +126,7 @@ export function TopBar({
       onSelectLocation({
         name: item.name,
         country: item.country,
+        countryCode: item.countryCode,
         admin1: item.admin1,
         latitude: item.latitude,
         longitude: item.longitude,
@@ -353,9 +358,7 @@ export function TopBar({
           </button>
         </div>
 
-        <button type="button" className="avatar" aria-label="Open profile">
-          EA
-        </button>
+        {authControl}
       </div>
     </header>
   )

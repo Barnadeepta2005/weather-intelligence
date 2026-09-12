@@ -122,6 +122,23 @@ Weather & CAMS           Official Ground AQI        Weather Maps API            
 - **Relative Path Calls**: All client data fetches use relative API routes (e.g. `/api/weather`), eliminating any dependency on hardcoded localhost URLs.
 - **MapLibre Dynamic Import**: MapLibre GL JS and WebGL rendering pipelines are client-side only and guarded against Node.js server-side rendering (SSR) execution.
 
+### Firebase authentication and saved locations
+
+The dashboard remains fully usable while signed out. Firebase Authentication is used only for optional email/password and Google sign-in, while Firestore stores only a signed-in user's saved location metadata—never live weather, AQI, UV, or radar responses.
+
+Add the following environment variables in both `.env.local` and the Vercel project environment settings:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+```
+
+Before production use, add the actual Vercel production domain (and any Vercel preview domain used for testing) in **Firebase Console → Authentication → Settings → Authorized domains**. Do not add a domain in source code. Enable Email/Password and Google providers in **Authentication → Sign-in method**, create a Firestore database in production mode, and deploy `firestore.rules` with the Firebase CLI or paste the file contents into the Firestore Rules editor.
+
 ---
 
 ## 7. Known Limitations
@@ -131,4 +148,3 @@ Weather & CAMS           Official Ground AQI        Weather Maps API            
 3. **Windows Geolocation Service (lfsvc)**: On Windows desktop environments, desktop browser geolocation may time out if the underlying Windows Location Service (`lfsvc`) is disabled in Windows Settings > Privacy & security > Location. The app handles this with a dedicated diagnostic warning.
 4. **CPCB Station Radius**: Official CPCB ground station air quality telemetry requires the target location to be within 25 km of an active CAAQMS ground monitor in India. Locations beyond this radius or during station outages gracefully fall back to the Copernicus CAMS atmospheric model with an explicit `STATION DATA UNAVAILABLE` badge.
 5. **Non-Commercial Fair Use Limits**: Upstream providers (Open-Meteo, RainViewer, Data.gov.in) enforce rate limits on free tiers (e.g. 10,000 calls/day on Open-Meteo). This software is designed for personal and educational use; high-traffic commercial operations require paid enterprise keys.
-

@@ -5,9 +5,10 @@ import type { CityWeather } from '@/lib/types'
 interface OtherCitiesProps {
   cities: CityWeather[]
   onSelectCity?: (city: string) => void
+  onAddLocation?: () => void
 }
 
-export function OtherCities({ cities, onSelectCity }: OtherCitiesProps) {
+export function OtherCities({ cities, onSelectCity, onAddLocation }: OtherCitiesProps) {
   return (
     <section className="places-section wide-section">
       <div className="section-heading">
@@ -15,7 +16,14 @@ export function OtherCities({ cities, onSelectCity }: OtherCitiesProps) {
           <p className="eyebrow">MY LOCATIONS</p>
           <h2>Other cities</h2>
         </div>
-        <button className="secondary-btn">
+        <button
+          type="button"
+          className="secondary-btn"
+          onClick={() => {
+            const savedSection = document.querySelector('.saved-locations')
+            savedSection?.scrollIntoView({ behavior: 'smooth' })
+          }}
+        >
           MANAGE <ChevronRight size={14} />
         </button>
       </div>
@@ -38,7 +46,12 @@ export function OtherCities({ cities, onSelectCity }: OtherCitiesProps) {
             <strong>{city.temperature}</strong>
           </div>
         ))}
-        <button className="add-city">
+        <button
+          type="button"
+          className="add-city"
+          onClick={onAddLocation}
+          aria-label="Search and add a location"
+        >
           <Plus size={20} />
           <span>ADD LOCATION</span>
         </button>

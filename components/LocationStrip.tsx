@@ -1,21 +1,42 @@
 'use client'
 
-import { useState } from 'react'
-import { MapPin, Heart } from 'lucide-react'
+import { MapPin, Heart, Loader2 } from 'lucide-react'
 import type { LocationData } from '@/lib/types'
 
 interface LocationStripProps {
   location: LocationData
   isLive?: boolean
+  isSaved?: boolean
+  onToggleSave?: () => void
+  isSaving?: boolean
+  isAuthenticated?: boolean
+  onOpenAuth?: () => void
 }
 
-export function LocationStrip({ location, isLive = true }: LocationStripProps) {
-  const [saved, setSaved] = useState(false)
-
+export function LocationStrip({
+  location,
+  isLive = true,
+  isSaved = false,
+  onToggleSave,
+  isSaving = false,
+  isAuthenticated = false,
+  onOpenAuth,
+}: LocationStripProps) {
   const adminSuffix =
     location.admin1 && location.admin1.toUpperCase() !== location.city.toUpperCase()
       ? `, ${location.admin1.toUpperCase()}`
       : ''
+
+  const handleSaveClick = () => {
+    if (isSaving) return
+    if (!isAuthenticated && onOpenAuth) {
+      onOpenAuth()
+      return
+    }
+    if (onToggleSave) {
+      onToggleSave()
+    }
+  }
 
   return (
     <div className="location-strip">
@@ -29,11 +50,19 @@ export function LocationStrip({ location, isLive = true }: LocationStripProps) {
         LOCAL TIME {location.localTime} / {isLive ? `UPDATED ${location.lastUpdated}` : 'DEMO MODE (OFFLINE)'}
       </span>
       <button
-        onClick={() => setSaved(!saved)}
-        className={`save-btn ${saved ? 'saved' : ''}`}
+        type="button"
+        onClick={handleSaveClick}
+        disabled={isSaving}
+        className={`save-btn ${isSaved ? 'saved' : ''}`}
+        aria-label={isSaved ? 'Remove from saved locations' : 'Save this location'}
+        title={!isAuthenticated ? 'Sign in to save this location' : isSaved ? 'Click to remove from saved locations' : 'Save to your account'}
       >
-        <Heart size={14} fill={saved ? 'currentColor' : 'none'} />
-        {saved ? 'SAVED' : 'SAVE LOCATION'}
+        {isSaving ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : (
+          <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
+        )}
+        {isSaved ? 'SAVED' : 'SAVE LOCATION'}
       </button>
     </div>
   )

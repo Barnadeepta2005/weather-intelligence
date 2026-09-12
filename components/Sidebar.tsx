@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Grid2X2, MapPin, Bell, Activity, Settings, CloudSun } from 'lucide-react'
+import { Grid2X2, MapPin, Bell, Activity, CloudSun, UserRound, LogOut } from 'lucide-react'
+import type { User } from 'firebase/auth'
 
 const NAV_ITEMS: { Icon: typeof Grid2X2; id: string }[] = [
   { Icon: Grid2X2, id: 'dashboard' },
@@ -10,8 +11,32 @@ const NAV_ITEMS: { Icon: typeof Grid2X2; id: string }[] = [
   { Icon: Activity, id: 'insights' },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  user?: User | null
+  onOpenAuth?: () => void
+  onSignOut?: () => void
+  onNavigatePlaces?: () => void
+}
+
+export function Sidebar({
+  user = null,
+  onOpenAuth,
+  onSignOut,
+  onNavigatePlaces,
+}: SidebarProps) {
   const [activeNav, setActiveNav] = useState('dashboard')
+
+  const handleNavClick = (id: string) => {
+    setActiveNav(id)
+    if (id === 'places') {
+      if (onNavigatePlaces) {
+        onNavigatePlaces()
+      } else {
+        const savedSection = document.querySelector('.saved-locations') || document.querySelector('.places-section')
+        savedSection?.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
+  }
 
   return (
     <aside className="sidebar">
@@ -25,17 +50,37 @@ export function Sidebar() {
         {NAV_ITEMS.map(({ Icon, id }) => (
           <button
             key={id}
+            type="button"
             className={`nav-item ${activeNav === id ? 'active' : ''}`}
-            onClick={() => setActiveNav(id)}
+            onClick={() => handleNavClick(id)}
             aria-label={id}
           >
             <Icon size={19} />
           </button>
         ))}
       </nav>
-      <button className="nav-item bottom" aria-label="Settings">
-        <Settings size={19} />
-      </button>
+      {user ? (
+        <button
+          type="button"
+          className="nav-item bottom"
+          onClick={onSignOut}
+          aria-label="Sign out"
+          title={`Signed in: ${user.displayName || user.email}. Click to sign out.`}
+          style={{ background: 'var(--lavender)' }}
+        >
+          <LogOut size={19} />
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="nav-item bottom"
+          onClick={onOpenAuth}
+          aria-label="Sign in"
+          title="Sign in to your account"
+        >
+          <UserRound size={19} />
+        </button>
+      )}
     </aside>
   )
 }

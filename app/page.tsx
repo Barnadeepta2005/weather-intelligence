@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import type { User } from 'firebase/auth'
 import { AlertTriangle, RefreshCw, Eye, X, MapPin } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { MobileNav } from '@/components/MobileNav'
@@ -15,6 +16,9 @@ import { UVCard } from '@/components/UVCard'
 import { HighlightsGrid } from '@/components/HighlightsGrid'
 import { WeeklyForecast } from '@/components/WeeklyForecast'
 import { OtherCities } from '@/components/OtherCities'
+import { AuthControl } from '@/components/AuthControl'
+import { SavedLocations } from '@/components/SavedLocations'
+import { useSavedLocations } from '@/lib/useSavedLocations'
 import {
   applyTemperatureUnit,
   DEFAULT_COORDINATES,
@@ -86,6 +90,32 @@ export default function Page() {
   // Geolocation states
   const [isLocating, setIsLocating] = useState<boolean>(false)
   const [geoNotice, setGeoNotice] = useState<GeoNoticeInfo | null>(null)
+  const [authUser, setAuthUser] = useState<User | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const signOutHandlerRef = useRef<(() => Promise<void>) | null>(null)
+
+  const handleSignOutReady = useCallback((fn: () => Promise<void>) => {
+    signOutHandlerRef.current = fn
+  }, [])
+
+  const handleSignOut = useCallback(() => {
+    void signOutHandlerRef.current?.()
+  }, [])
+
+  const handleOpenAuth = useCallback(() => {
+    setAuthModalOpen(true)
+  }, [])
+
+  const savedState = useSavedLocations(authUser)
+
+  const handleAuthUserChange = useCallback((user: User | null) => {
+    setAuthUser(user)
+  }, [])
+
+  const handleAuthLoadingChange = useCallback((nextLoading: boolean) => {
+    setAuthLoading(nextLoading)
+  }, [])
 
   // Initialize from URL search parameters if present
   useEffect(() => {
@@ -207,6 +237,7 @@ export default function Page() {
     (loc: {
       name: string
       country: string
+      countryCode?: string
       admin1?: string
       latitude: number
       longitude: number
@@ -216,6 +247,7 @@ export default function Page() {
       const newLoc: SelectedLocation = {
         name: loc.name,
         country: loc.country,
+        countryCode: loc.countryCode,
         admin1: loc.admin1,
         latitude: loc.latitude,
         longitude: loc.longitude,
@@ -442,11 +474,22 @@ export default function Page() {
 
   return (
     <main className="weather-app">
-      <Sidebar />
+      <Sidebar
+        user={authUser}
+        onOpenAuth={handleOpenAuth}
+        onSignOut={handleSignOut}
+        onNavigatePlaces={() => {
+          document.querySelector('.saved-locations')?.scrollIntoView({ behavior: 'smooth' })
+        }}
+      />
       <section className="content-shell">
         <MobileNav
           onUseCurrentLocation={handleUseCurrentLocation}
           isLocating={isLocating}
+          user={authUser}
+          authLoading={authLoading}
+          onOpenAuth={handleOpenAuth}
+          onSignOut={handleSignOut}
         />
         <TopBar
           unit={unit}
@@ -455,6 +498,15 @@ export default function Page() {
           onUseCurrentLocation={handleUseCurrentLocation}
           isLocating={isLocating}
           suggestions={topBarSuggestions}
+          authControl={
+            <AuthControl
+              onUserChange={handleAuthUserChange}
+              onLoadingChange={handleAuthLoadingChange}
+              isOpen={authModalOpen}
+              onOpenChange={setAuthModalOpen}
+              onSignOutReady={handleSignOutReady}
+            />
+          }
         />
 
         {/* GEOLOCATION NOTIFICATION BANNER WITH ERROR RECOVERY */}
@@ -682,6 +734,19 @@ export default function Page() {
             <LocationStrip
               location={activeData.location}
               isLive={activeData.isLive}
+              isSaved={savedState.isLocationSaved(location.latitude, location.longitude)}
+              onToggleSave={() => savedState.toggleLocation(location)}
+              isSaving={savedState.saving}
+              isAuthenticated={Boolean(authUser)}
+              onOpenAuth={handleOpenAuth}
+            />
+            <SavedLocations
+              user={authUser}
+              authLoading={authLoading}
+              currentLocation={location}
+              onSelectLocation={handleSelectLocation}
+              onOpenAuth={handleOpenAuth}
+              savedState={savedState}
             />
             <div className="dashboard-grid">
               <HeroCard conditions={activeData.currentConditions} />
@@ -702,6 +767,14 @@ export default function Page() {
               <OtherCities
                 cities={activeData.otherCities}
                 onSelectCity={handleSelectOtherCity}
+                onAddLocation={() => {
+                  const searchBtn = document.querySelector('.search-btn') as HTMLButtonElement | null
+                  searchBtn?.click()
+                  setTimeout(() => {
+                    const searchInput = document.querySelector('.search-expanded-box input') as HTMLInputElement | null
+                    searchInput?.focus()
+                  }, 50)
+                }}
               />
             </div>
           </>
