@@ -1,0 +1,74 @@
+{
+  "cities": [
+    {
+      "targetCity": "Kolkata",
+      "renderedCity": "KOLKATA, WEST BENGAL, INDIA",
+      "temperature": "29°",
+      "aqiHeading": "CPCB AIR QUALITY",
+      "aqiValue": "63",
+      "aqiLevel": "SATISFACTORY",
+      "aqiSourceBadge": "CPCB GROUND DATA",
+      "uvIndex": "6",
+      "uvLevel": "HIGH",
+      "radarHeader": "KOLKATA RADAR",
+      "radarReady": true
+    },
+    {
+      "targetCity": "Mumbai",
+      "renderedCity": "MUMBAI, MAHARASHTRA, INDIA",
+      "temperature": "30°",
+      "aqiHeading": "CPCB AIR QUALITY",
+      "aqiValue": "53",
+      "aqiLevel": "SATISFACTORY",
+      "aqiSourceBadge": "CPCB GROUND DATA",
+      "uvIndex": "6.5",
+      "uvLevel": "HIGH",
+      "radarHeader": "MUMBAI RADAR",
+      "radarReady": true
+    },
+    {
+      "targetCity": "Delhi",
+      "renderedCity": "DELHI, INDIA",
+      "temperature": "32°",
+      "aqiHeading": "US AIR QUALITY INDEX",
+      "aqiValue": "76",
+      "aqiLevel": "MODERATE",
+      "aqiSourceBadge": "MODELED AIR QUALITY",
+      "uvIndex": "1.1",
+      "uvLevel": "LOW",
+      "radarHeader": "DELHI RADAR",
+      "radarReady": true
+    },
+    {
+      "targetCity": "London",
+      "renderedCity": "LONDON, UNITED KINGDOM",
+      "temperature": "16°",
+      "aqiHeading": "US AIR QUALITY INDEX",
+      "aqiValue": "39",
+      "aqiLevel": "GOOD",
+      "aqiSourceBadge": "MODELED AIR QUALITY",
+      "uvIndex": "0.8",
+      "uvLevel": "LOW",
+      "radarHeader": "LONDON RADAR",
+      "radarReady": true
+    },
+    {
+      "targetCity": "Tokyo",
+      "renderedCity": "TOKYO, JAPAN",
+      "temperature": "25°",
+      "aqiHeading": "US AIR QUALITY INDEX",
+      "aqiValue": "68",
+      "aqiLevel": "MODERATE",
+      "aqiSourceBadge": "MODELED AIR QUALITY",
+      "uvIndex": "0.1",
+      "uvLevel": "LOW",
+      "radarHeader": "TOKYO RADAR",
+      "radarReady": true
+    }
+  ],
+  "dropdown": {
+    "isOpen": true,
+    "resultsCount": 8,
+    "firstResult": "Paris | Île-de-France Region, France | FR"
+  }
+}

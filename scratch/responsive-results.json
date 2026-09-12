@@ -1,0 +1,72 @@
+[
+  {
+    "viewport": "375px",
+    "windowWidth": 375,
+    "scrollWidth": 375,
+    "hasOverflow": false,
+    "radarDimensions": "295x334",
+    "hourlyScrollable": true,
+    "weeklyScrollable": true,
+    "smallTouchTargetsCount": 7
+  },
+  {
+    "viewport": "390px",
+    "windowWidth": 390,
+    "scrollWidth": 390,
+    "hasOverflow": false,
+    "radarDimensions": "310x334",
+    "hourlyScrollable": true,
+    "weeklyScrollable": true,
+    "smallTouchTargetsCount": 7
+  },
+  {
+    "viewport": "430px",
+    "windowWidth": 430,
+    "scrollWidth": 430,
+    "hasOverflow": false,
+    "radarDimensions": "350x334",
+    "hourlyScrollable": true,
+    "weeklyScrollable": true,
+    "smallTouchTargetsCount": 7
+  },
+  {
+    "viewport": "768px",
+    "windowWidth": 768,
+    "scrollWidth": 753,
+    "hasOverflow": false,
+    "radarDimensions": "575x414",
+    "hourlyScrollable": true,
+    "weeklyScrollable": true,
+    "smallTouchTargetsCount": 2
+  },
+  {
+    "viewport": "1024px",
+    "windowWidth": 1024,
+    "scrollWidth": 1009,
+    "hasOverflow": false,
+    "radarDimensions": "421x414",
+    "hourlyScrollable": true,
+    "weeklyScrollable": true,
+    "smallTouchTargetsCount": 2
+  },
+  {
+    "viewport": "1280px",
+    "windowWidth": 1280,
+    "scrollWidth": 1265,
+    "hasOverflow": false,
+    "radarDimensions": "667x414",
+    "hourlyScrollable": false,
+    "weeklyScrollable": false,
+    "smallTouchTargetsCount": 2
+  },
+  {
+    "viewport": "1440px",
+    "windowWidth": 1440,
+    "scrollWidth": 1425,
+    "hasOverflow": false,
+    "radarDimensions": "775x414",
+    "hourlyScrollable": false,
+    "weeklyScrollable": false,
+    "smallTouchTargetsCount": 2
+  }
+]
