@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAirQuality } from '@/lib/air-quality/service'
-import { lastCpcbDiagnostic } from '@/lib/air-quality/india-cpcb'
+import { lastCpcbFingerprint } from '@/lib/air-quality/india-cpcb'
 import { DEFAULT_COORDINATES } from '@/lib/open-meteo'
 
 export async function GET(request: NextRequest) {
@@ -45,20 +45,15 @@ export async function GET(request: NextRequest) {
       'Cache-Control': 'no-store, no-cache, must-revalidate',
     }
 
-    if (lastCpcbDiagnostic) {
-      headers['x-diag-api-key-present'] = String(lastCpcbDiagnostic.apiKeyPresent)
-      headers['x-diag-station'] = lastCpcbDiagnostic.stationAttempted || ''
-      headers['x-diag-elapsed-ms'] = String(lastCpcbDiagnostic.elapsedMs)
-      headers['x-diag-cpcb-status'] = lastCpcbDiagnostic.httpStatus !== null ? String(lastCpcbDiagnostic.httpStatus) : 'none'
-      headers['x-diag-response-ok'] = lastCpcbDiagnostic.responseOk !== null ? String(lastCpcbDiagnostic.responseOk) : 'none'
-      headers['x-diag-content-type'] = lastCpcbDiagnostic.contentType || 'none'
-      headers['x-diag-body-length'] = lastCpcbDiagnostic.bodyLength !== null ? String(lastCpcbDiagnostic.bodyLength) : 'none'
-      if (lastCpcbDiagnostic.errorName) {
-        headers['x-diag-error-name'] = lastCpcbDiagnostic.errorName
-      }
-      if (lastCpcbDiagnostic.errorMessage) {
-        headers['x-diag-error-message'] = lastCpcbDiagnostic.errorMessage
-      }
+    if (lastCpcbFingerprint) {
+      headers['x-diag-key-present'] = String(lastCpcbFingerprint.keyPresent)
+      headers['x-diag-key-length'] = String(lastCpcbFingerprint.keyLength)
+      headers['x-diag-key-sha256'] = lastCpcbFingerprint.keySha256
+      headers['x-diag-key-trimmed-sha256'] = lastCpcbFingerprint.keyTrimmedSha256
+      headers['x-diag-cpcb-status'] = lastCpcbFingerprint.httpStatus !== null ? String(lastCpcbFingerprint.httpStatus) : 'none'
+      headers['x-diag-body-length'] = lastCpcbFingerprint.bodyLength !== null ? String(lastCpcbFingerprint.bodyLength) : 'none'
+      headers['x-diag-error-string'] = lastCpcbFingerprint.errorString || 'none'
+      headers['x-diag-elapsed-ms'] = String(lastCpcbFingerprint.elapsedMs)
     }
 
     return NextResponse.json(aqiData, {

@@ -13,6 +13,7 @@
 
 import type { UnifiedAirQuality } from '@/lib/types'
 import { calculateCPCBAQI, classifyCPCB, type PollutantReading } from './cpcb-calculator'
+import crypto from 'crypto'
 
 interface CacheEntry {
   data: UnifiedAirQuality
@@ -24,6 +25,19 @@ const stationCache = new Map<string, CacheEntry>()
 const CACHE_TTL_MS = 20 * 60 * 1000
 
 const DATA_GOV_RESOURCE_ID = '3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69'
+
+export interface CpcbFingerprintDiagnostic {
+  keyPresent: boolean
+  keyLength: number
+  keySha256: string
+  keyTrimmedSha256: string
+  httpStatus: number | null
+  bodyLength: number | null
+  errorString: string | null
+  elapsedMs: number
+}
+
+export let lastCpcbFingerprint: CpcbFingerprintDiagnostic | null = null
 
 function getApiKey(): string | null {
   return process.env.DATA_GOV_IN_API_KEY?.trim() || null
@@ -48,21 +62,6 @@ function parseLastUpdateToIso(dateStr?: string): string {
   return dateStr
 }
 
-export interface CpcbDiagnosticInfo {
-  apiKeyPresent: boolean
-  stationAttempted: string
-  startTimeIso: string
-  elapsedMs: number
-  httpStatus: number | null
-  responseOk: boolean | null
-  contentType: string | null
-  bodyLength: number | null
-  errorName: string | null
-  errorMessage: string | null
-}
-
-export let lastCpcbDiagnostic: CpcbDiagnosticInfo | null = null
-
 /**
  * Fetch official ground monitoring air quality for a specific CPCB station.
  * Returns null if the station data is corrupt, unavailable, or fails the CPCB minimum data criteria.
@@ -75,25 +74,23 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
     return cached.data
   }
 
+  const rawKey = process.env.DATA_GOV_IN_API_KEY || ''
+  const keyPresent = Boolean(rawKey && rawKey.trim().length > 0)
+  const keyLength = rawKey.length
+  const keySha256 = keyPresent ? crypto.createHash('sha256').update(rawKey, 'utf8').digest('hex') : 'none'
+  const keyTrimmedSha256 = keyPresent ? crypto.createHash('sha256').update(rawKey.trim(), 'utf8').digest('hex') : 'none'
   const startTime = Date.now()
-  const startTimeIso = new Date(startTime).toISOString()
-  const hasKey = Boolean(process.env.DATA_GOV_IN_API_KEY && process.env.DATA_GOV_IN_API_KEY.trim().length > 0)
 
-  console.log(`[CPCB Diag] Station attempt: "${stationName}", DATA_GOV_IN_API_KEY present: ${hasKey}, startTime: ${startTimeIso}`)
-
-  if (!hasKey) {
-    console.warn(`[CPCB Diag] Station "${stationName}" aborted: process.env.DATA_GOV_IN_API_KEY is missing or empty.`)
-    lastCpcbDiagnostic = {
-      apiKeyPresent: false,
-      stationAttempted: stationName,
-      startTimeIso,
-      elapsedMs: Date.now() - startTime,
+  if (!keyPresent) {
+    lastCpcbFingerprint = {
+      keyPresent: false,
+      keyLength: 0,
+      keySha256: 'none',
+      keyTrimmedSha256: 'none',
       httpStatus: null,
-      responseOk: null,
-      contentType: null,
       bodyLength: null,
-      errorName: 'MissingApiKey',
-      errorMessage: 'process.env.DATA_GOV_IN_API_KEY is missing or empty in runtime environment',
+      errorString: 'KEY_NOT_CONFIGURED',
+      elapsedMs: 0,
     }
     return null
   }
@@ -113,23 +110,28 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
     })
 
     const elapsedMs = Date.now() - startTime
-    const contentType = res.headers.get('content-type')
     const rawText = await res.text()
     const bodyLength = rawText.length
 
-    console.log(`[CPCB Diag] Station "${stationName}": HTTP ${res.status}, ok: ${res.ok}, elapsed: ${elapsedMs}ms, contentType: "${contentType}", bodyLength: ${bodyLength}`)
+    let errorString: string | null = null
+    if (!res.ok) {
+      try {
+        const parsed = JSON.parse(rawText)
+        errorString = parsed?.error || parsed?.message || `HTTP ${res.status}`
+      } catch {
+        errorString = `HTTP ${res.status}`
+      }
+    }
 
-    lastCpcbDiagnostic = {
-      apiKeyPresent: true,
-      stationAttempted: stationName,
-      startTimeIso,
-      elapsedMs,
+    lastCpcbFingerprint = {
+      keyPresent: true,
+      keyLength,
+      keySha256,
+      keyTrimmedSha256,
       httpStatus: res.status,
-      responseOk: res.ok,
-      contentType,
       bodyLength,
-      errorName: res.ok ? null : `HttpError${res.status}`,
-      errorMessage: res.ok ? null : `HTTP ${res.status} ${res.statusText || ''}`.trim(),
+      errorString: errorString ? String(errorString).slice(0, 100) : null,
+      elapsedMs,
     }
 
     if (!res.ok) {
@@ -144,15 +146,12 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
     let payload: any = null
     try {
       payload = JSON.parse(rawText)
-    } catch (parseErr: any) {
-      console.warn(`[CPCB Diag] Failed to parse JSON response for station "${stationName}": ${parseErr.message}`)
+    } catch {
       return null
     }
-
     const records = payload?.records
 
     if (!Array.isArray(records) || records.length === 0) {
-      console.warn(`[CPCB Diag] Station "${stationName}" returned 0 records.`)
       return null
     }
 
@@ -252,19 +251,17 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
     return unified
   } catch (err: any) {
     const elapsedMs = Date.now() - startTime
-    console.warn(`[CPCB Diag] Station "${stationName}" caught error: name=${err?.name || 'Error'}, message=${err?.message || String(err)}, elapsed=${elapsedMs}ms`)
-    lastCpcbDiagnostic = {
-      apiKeyPresent: hasKey,
-      stationAttempted: stationName,
-      startTimeIso,
-      elapsedMs,
+    lastCpcbFingerprint = {
+      keyPresent: true,
+      keyLength,
+      keySha256,
+      keyTrimmedSha256,
       httpStatus: null,
-      responseOk: null,
-      contentType: null,
       bodyLength: null,
-      errorName: err?.name || 'Error',
-      errorMessage: err?.message || String(err),
+      errorString: err?.name || 'FetchError',
+      elapsedMs,
     }
+    console.warn(`[CPCB Provider] Error fetching station "${stationName}":`, err?.message || err)
     return null
   }
 }
