@@ -88,13 +88,19 @@ export interface LocationData {
   lastUpdated: string
 }
 
-/** AI-generated daily insight */
+/** Deterministic daily insight */
 export interface InsightData {
   heading: string
-  headingEmphasis: string
+  headingEmphasis?: string
   description: string
   rainChance: string
   wind: string
+  category?: 'ALERT' | 'RAIN' | 'HEAT' | 'COLD' | 'UV' | 'AIR_QUALITY' | 'WIND' | 'STABLE'
+  headline?: string
+  explanation?: string
+  recommendation?: string
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH'
+  icon?: 'alert' | 'rain' | 'sun' | 'wind' | 'shield' | 'check' | 'cloud' | string
 }
 
 /** Search suggestion entry */

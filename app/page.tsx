@@ -22,6 +22,7 @@ import { SettingsModal } from '@/components/SettingsModal'
 import { AlertBanner } from '@/components/AlertBanner'
 import { useSavedLocations } from '@/lib/useSavedLocations'
 import type { AlertsResponse } from '@/lib/alerts/types'
+import { generateTodayInsight } from '@/lib/insights'
 import {
   applyTemperatureUnit,
   DEFAULT_COORDINATES,
@@ -548,6 +549,23 @@ export default function Page() {
     return applyTemperatureUnit(data, unit)
   }, [data, unit])
 
+  // Deterministically synthesize Today's Insight (Phase 3B), updating when alertsData arrives
+  const todayInsight = useMemo(() => {
+    if (!activeData) return null
+    return generateTodayInsight({
+      currentConditions: activeData.currentConditions,
+      hourly: activeData.hourly,
+      weekly: activeData.weekly,
+      airQuality: activeData.airQuality,
+      uv: activeData.uv,
+      alerts: alertsData?.alerts || null,
+      timezone: location.timezone,
+      city: location.name,
+      unit,
+      rawCelsiuses: activeData.rawCelsiuses,
+    })
+  }, [activeData, alertsData, location.timezone, location.name, unit])
+
   const enableDemoMode = () => {
     setError(null)
     setLoading(false)
@@ -846,7 +864,7 @@ export default function Page() {
             )}
             <div className="dashboard-grid">
               <HeroCard conditions={activeData.currentConditions} />
-              <InsightCard insight={activeData.insight} />
+              <InsightCard insight={todayInsight || activeData.insight} />
               <HourlyForecast entries={activeData.hourly} />
               <RadarCard
                 latitude={location.latitude}

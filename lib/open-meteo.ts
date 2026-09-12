@@ -36,6 +36,7 @@ import {
   celsiusToFahrenheit,
 } from './weather-utils'
 import { getAirQuality } from './air-quality/service'
+import { generateTodayInsight } from './insights'
 
 export interface RawCelsiusValues {
   temp: number
@@ -103,56 +104,7 @@ async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response
   }
 }
 
-/**
- * Generate editorial insight from live weather conditions.
- */
-function generateInsight(
-  precipMax: number,
-  windSpeed: number,
-  tempMax: number,
-  condition: string
-): InsightData {
-  const windStr = `${windSpeed.toFixed(1)} km/h`
-  const rainStr = `${Math.round(precipMax)}%`
 
-  if (precipMax >= 60) {
-    return {
-      heading: 'Precipitation probable today',
-      headingEmphasis: 'keep an umbrella ready.',
-      description: `Showers or thunderstorms likely with up to ${rainStr} chance of rain. Peak winds at ${windStr}.`,
-      rainChance: rainStr,
-      wind: windStr,
-    }
-  }
-
-  if (tempMax >= 35) {
-    return {
-      heading: 'High heat warning',
-      headingEmphasis: 'stay hydrated & seek shade.',
-      description: `Temperatures expected to peak at ${Math.round(tempMax)}°C today with ${condition.toLowerCase()}. Avoid direct midday sun.`,
-      rainChance: rainStr,
-      wind: windStr,
-    }
-  }
-
-  if (precipMax <= 20) {
-    return {
-      heading: 'Best outdoor window',
-      headingEmphasis: 'favorable clear conditions.',
-      description: `Minimal chance of rain today (${rainStr}). Enjoy outdoor activities with comfortable winds around ${windStr}.`,
-      rainChance: rainStr,
-      wind: windStr,
-    }
-  }
-
-  return {
-    heading: 'Scattered clouds expected',
-    headingEmphasis: 'variable conditions.',
-    description: `Moderate precipitation probability (${rainStr}) with mild breeze of ${windStr}. Plan outdoor trips accordingly.`,
-    rainChance: rainStr,
-    wind: windStr,
-  }
-}
 
 /**
  * Fetch full dashboard weather data from Open-Meteo.
@@ -409,12 +361,17 @@ export async function getWeatherData(
     lastUpdated: 'JUST NOW',
   }
 
-  // 8. Editorial Insight
-  const precipMaxToday = typeof daily.precipitation_probability_max?.[0] === 'number'
-    ? daily.precipitation_probability_max[0]
-    : 0
-  const windSpeedToday = typeof current.wind_speed_10m === 'number' ? current.wind_speed_10m : 0
-  const insight = generateInsight(precipMaxToday, windSpeedToday, highC, mappedCode.condition)
+  // 8. Editorial Insight (Deterministic Phase 3B)
+  const insight = generateTodayInsight({
+    currentConditions,
+    hourly: hourlyEntries,
+    weekly: weeklyEntries,
+    airQuality,
+    uv,
+    alerts: null,
+    timezone: activeTz,
+    city,
+  })
 
   // 9. Search Suggestions
   const suggestions: SearchSuggestion[] = otherCities.slice(0, 2).map((c) => ({
