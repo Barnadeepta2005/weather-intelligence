@@ -63,7 +63,7 @@ export const CPCB_STATIONS: CPCBStationInfo[] = [
   { station: 'Major Dhyan Chand National Stadium, Delhi - DPCC', city: 'Delhi', state: 'Delhi', latitude: 28.611281, longitude: 77.237738 },
   { station: 'Mandir Marg, Delhi - DPCC', city: 'Delhi', state: 'Delhi', latitude: 28.636429, longitude: 77.201067 },
   { station: 'ITO, Delhi - CPCB', city: 'Delhi', state: 'Delhi', latitude: 28.631694, longitude: 77.249439 },
-  { station: 'Lodhi Road, Delhi - IITM', city: 'Delhi', state: 'Delhi', latitude: 28.591828, longitude: 77.227306 },
+  { station: 'IMD Lodhi Road, Delhi - IITM', city: 'Delhi', state: 'Delhi', latitude: 28.591828, longitude: 77.227306 },
   { station: 'R K Puram, Delhi - DPCC', city: 'Delhi', state: 'Delhi', latitude: 28.563262, longitude: 77.186937 },
   { station: 'Anand Vihar, Delhi - DPCC', city: 'Delhi', state: 'Delhi', latitude: 28.647622, longitude: 77.315802 },
   { station: 'Punjabi Bagh, Delhi - DPCC', city: 'Delhi', state: 'Delhi', latitude: 28.674045, longitude: 77.131023 },
@@ -90,14 +90,12 @@ export const CPCB_STATIONS: CPCBStationInfo[] = [
   { station: 'City Railway Station, Bengaluru - KSPCB', city: 'Bengaluru', state: 'Karnataka', latitude: 12.9772, longitude: 77.5713 },
   { station: 'Bapuji Nagar, Bengaluru - KSPCB', city: 'Bengaluru', state: 'Karnataka', latitude: 12.951913, longitude: 77.539784 },
   { station: 'Hebbal, Bengaluru - KSPCB', city: 'Bengaluru', state: 'Karnataka', latitude: 13.029152, longitude: 77.585901 },
-  { station: 'BTM Layout, Bengaluru - CPCB', city: 'Bengaluru', state: 'Karnataka', latitude: 12.9135, longitude: 77.6101 },
-  { station: 'Peenya, Bengaluru - KSPCB', city: 'Bengaluru', state: 'Karnataka', latitude: 13.0271, longitude: 77.5059 },
-  { station: 'Saneguruvanahalli, Bengaluru - KSPCB', city: 'Bengaluru', state: 'Karnataka', latitude: 12.9916, longitude: 77.5385 },
+  { station: 'Peenya, Bengaluru - CPCB', city: 'Bengaluru', state: 'Karnataka', latitude: 13.0271, longitude: 77.5059 },
+  { station: 'Hombegowda Nagar, Bengaluru - KSPCB', city: 'Bengaluru', state: 'Karnataka', latitude: 12.9385, longitude: 77.5915 },
 
   // Chennai (Tamil Nadu)
   { station: 'Manali Village, Chennai - TNPCB', city: 'Chennai', state: 'Tamil Nadu', latitude: 13.1662, longitude: 80.2584 },
-  { station: 'Alandur, Chennai - TNPCB', city: 'Chennai', state: 'Tamil Nadu', latitude: 13.0012, longitude: 80.2014 },
-  { station: 'Velachery, Chennai - TNPCB', city: 'Chennai', state: 'Tamil Nadu', latitude: 12.9744, longitude: 80.2185 },
+  { station: 'Velachery Res. Area, Chennai - CPCB', city: 'Chennai', state: 'Tamil Nadu', latitude: 12.9744, longitude: 80.2185 },
 
   // Hyderabad (Telangana)
   { station: 'Sanathnagar, Hyderabad - TSPCB', city: 'Hyderabad', state: 'Telangana', latitude: 17.4559458, longitude: 78.4332152 },
@@ -109,7 +107,7 @@ export const CPCB_STATIONS: CPCBStationInfo[] = [
 
   // Pune (Maharashtra)
   { station: 'Mhada Colony, Pune - IITM', city: 'Pune', state: 'Maharashtra', latitude: 18.57304, longitude: 73.927715 },
-  { station: 'Shivajinagar, Pune - MPCB', city: 'Pune', state: 'Maharashtra', latitude: 18.5308, longitude: 73.8475 },
+  { station: 'Revenue Colony-Shivajinagar, Pune - IITM', city: 'Pune', state: 'Maharashtra', latitude: 18.5308, longitude: 73.8475 },
 
   // Jaipur (Rajasthan)
   { station: 'Police Commissionerate, Jaipur - RSPCB', city: 'Jaipur', state: 'Rajasthan', latitude: 26.9164092, longitude: 75.7994901 },

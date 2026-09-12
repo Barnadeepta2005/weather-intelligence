@@ -182,7 +182,7 @@ export function calculateCPCBAQI(readings: PollutantReading[]): CPCBCalculationR
       continue
     }
 
-    if ((key === 'PM2.5' || key === 'PM10') && val <= 0) {
+    if ((key === 'PM2.5' || key === 'PM10') && val < 0) {
       continue
     }
 

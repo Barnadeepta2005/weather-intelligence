@@ -12,7 +12,7 @@
  */
 
 import type { UnifiedAirQuality } from '@/lib/types'
-import { calculateCPCBAQI, type PollutantReading } from './cpcb-calculator'
+import { calculateCPCBAQI, classifyCPCB, type PollutantReading } from './cpcb-calculator'
 
 interface CacheEntry {
   data: UnifiedAirQuality
@@ -74,7 +74,7 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
 
   try {
     const res = await fetch(endpoint, {
-      signal: AbortSignal.timeout(4000), // 4-second resilient server-side timeout
+      signal: AbortSignal.timeout(7000), // 7-second resilient server-side timeout
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'Weather-App-CPCB-Client/1.0',
@@ -97,13 +97,14 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
       return null
     }
 
-    // Map records to pollutant readings and specific values
+    // Map records to pollutant readings, specific values, and check for direct CPCB AQI
     const readings: PollutantReading[] = []
     let pm25: number | null = null
     let pm10: number | null = null
     let o3: number | null = null
     let no2: number | null = null
     let lastUpdate: string | null = null
+    let directAqi: number | null = null
 
     for (const r of records) {
       const rawVal = r.avg_value
@@ -114,6 +115,18 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
         const num = parseFloat(String(rawVal).trim())
         if (!isNaN(num) && num > -900) {
           parsedVal = Math.round(num)
+        }
+      }
+
+      // Check if this record reports a direct CPCB AQI value
+      if (pid === 'AQI' || pid === 'NAQI' || pid === 'AIR QUALITY INDEX' || pid === 'INDEX') {
+        if (parsedVal !== null && parsedVal >= 0 && parsedVal <= 500) {
+          directAqi = parsedVal
+        }
+      } else if (r.aqi !== undefined && r.aqi !== null && r.aqi !== 'NA' && r.aqi !== '') {
+        const num = parseFloat(String(r.aqi).trim())
+        if (!isNaN(num) && num >= 0 && num <= 500) {
+          directAqi = Math.round(num)
         }
       }
 
@@ -134,21 +147,35 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
       }
     }
 
-    // Run strict CPCB protocol calculation and validation
-    const calcResult = calculateCPCBAQI(readings)
+    let finalAqi: number
+    let finalCategory: string
+    let finalProminent: string | undefined
 
-    if (!calcResult.isValid) {
-      console.warn(`[CPCB Provider] Station "${stationName}" rejected: ${calcResult.validationError}`)
-      return null
+    if (directAqi !== null) {
+      // PRODUCT RULE: When a valid direct CPCB AQI value is available, use it directly.
+      finalAqi = directAqi
+      finalCategory = classifyCPCB(directAqi)
+    } else {
+      // Otherwise, calculate NAQI using official CPCB protocol from monitored readings
+      const calcResult = calculateCPCBAQI(readings)
+
+      if (!calcResult.isValid) {
+        console.warn(`[CPCB Provider] Station "${stationName}" rejected: ${calcResult.validationError}`)
+        return null
+      }
+
+      finalAqi = calcResult.aqi
+      finalCategory = calcResult.category
+      finalProminent = calcResult.prominentPollutant
     }
 
     const unified: UnifiedAirQuality = {
-      index: calcResult.aqi,
+      index: finalAqi,
       standard: 'CPCB',
       sourceType: 'GROUND_STATION',
       sourceName: `CPCB CAAQMS — ${stationName}`,
-      level: calcResult.category,
-      prominentPollutant: calcResult.prominentPollutant,
+      level: finalCategory,
+      prominentPollutant: finalProminent,
       pm25,
       pm10,
       o3,
