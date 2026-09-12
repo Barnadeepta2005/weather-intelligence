@@ -19,7 +19,9 @@ import { OtherCities } from '@/components/OtherCities'
 import { AuthControl } from '@/components/AuthControl'
 import { SavedLocations } from '@/components/SavedLocations'
 import { SettingsModal } from '@/components/SettingsModal'
+import { AlertBanner } from '@/components/AlertBanner'
 import { useSavedLocations } from '@/lib/useSavedLocations'
+import type { AlertsResponse } from '@/lib/alerts/types'
 import {
   applyTemperatureUnit,
   DEFAULT_COORDINATES,
@@ -95,6 +97,8 @@ export default function Page() {
   const [authLoading, setAuthLoading] = useState(true)
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+  const [alertsData, setAlertsData] = useState<AlertsResponse | null>(null)
+  const [alertsLoading, setAlertsLoading] = useState<boolean>(false)
   const signOutHandlerRef = useRef<(() => Promise<void>) | null>(null)
 
   // Hydrate temperature unit from client-side persistent storage
@@ -259,9 +263,64 @@ export default function Page() {
     }
   }, [])
 
+  // Fetch official weather alerts (India: IMD)
+  const activeAlertsRequestRef = useRef<number>(0)
+  const fetchAlertsForLocation = useCallback(async (targetLocation: SelectedLocation) => {
+    const requestId = ++activeAlertsRequestRef.current
+
+    // Quick boundary check for non-Indian locations
+    const isForeign =
+      (targetLocation.countryCode && targetLocation.countryCode.toUpperCase() !== 'IN') ||
+      (targetLocation.country && !targetLocation.country.toLowerCase().includes('india'))
+    const isOutOfIndiaCoords =
+      targetLocation.latitude < 6 ||
+      targetLocation.latitude > 38 ||
+      targetLocation.longitude < 68 ||
+      targetLocation.longitude > 98
+
+    if (isForeign && isOutOfIndiaCoords) {
+      if (requestId === activeAlertsRequestRef.current) {
+        setAlertsData(null)
+      }
+      return
+    }
+
+    setAlertsLoading(true)
+    try {
+      const query = new URLSearchParams({
+        latitude: String(targetLocation.latitude),
+        longitude: String(targetLocation.longitude),
+        city: targetLocation.name,
+        country: targetLocation.country,
+      })
+      if (targetLocation.admin1) query.set('admin1', targetLocation.admin1)
+      if (targetLocation.countryCode) query.set('countryCode', targetLocation.countryCode)
+
+      const res = await fetch(`/api/alerts?${query.toString()}`)
+      if (!res.ok) {
+        throw new Error(`Alerts fetch failed (HTTP ${res.status})`)
+      }
+
+      const json: AlertsResponse = await res.json()
+      if (requestId === activeAlertsRequestRef.current) {
+        setAlertsData(json)
+      }
+    } catch (err) {
+      // Safe fallback: keep dashboard fully functional, hide alerts banner
+      if (requestId === activeAlertsRequestRef.current) {
+        setAlertsData(null)
+      }
+    } finally {
+      if (requestId === activeAlertsRequestRef.current) {
+        setAlertsLoading(false)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     fetchWeatherForLocation(location)
-  }, [location, fetchWeatherForLocation])
+    fetchAlertsForLocation(location)
+  }, [location, fetchWeatherForLocation, fetchAlertsForLocation])
 
   // Handle location selection from search suggestions
   const handleSelectLocation = useCallback(
@@ -782,6 +841,9 @@ export default function Page() {
               onOpenAuth={handleOpenAuth}
               savedState={savedState}
             />
+            {alertsData?.hasActiveAlerts && alertsData.alerts.length > 0 && (
+              <AlertBanner alerts={alertsData.alerts} />
+            )}
             <div className="dashboard-grid">
               <HeroCard conditions={activeData.currentConditions} />
               <InsightCard insight={activeData.insight} />
