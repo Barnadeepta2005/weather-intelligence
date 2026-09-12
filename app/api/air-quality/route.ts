@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAirQuality } from '@/lib/air-quality/service'
-import { lastCpcbFingerprint } from '@/lib/air-quality/india-cpcb'
 import { DEFAULT_COORDINATES } from '@/lib/open-meteo'
 
 export async function GET(request: NextRequest) {
@@ -41,24 +40,11 @@ export async function GET(request: NextRequest) {
       timezone: safeTimezone,
     })
 
-    const headers: Record<string, string> = {
-      'Cache-Control': 'no-store, no-cache, must-revalidate',
-    }
-
-    if (lastCpcbFingerprint) {
-      headers['x-diag-key-present'] = String(lastCpcbFingerprint.keyPresent)
-      headers['x-diag-key-length'] = String(lastCpcbFingerprint.keyLength)
-      headers['x-diag-key-sha256'] = lastCpcbFingerprint.keySha256
-      headers['x-diag-key-trimmed-sha256'] = lastCpcbFingerprint.keyTrimmedSha256
-      headers['x-diag-cpcb-status'] = lastCpcbFingerprint.httpStatus !== null ? String(lastCpcbFingerprint.httpStatus) : 'none'
-      headers['x-diag-body-length'] = lastCpcbFingerprint.bodyLength !== null ? String(lastCpcbFingerprint.bodyLength) : 'none'
-      headers['x-diag-error-string'] = lastCpcbFingerprint.errorString || 'none'
-      headers['x-diag-elapsed-ms'] = String(lastCpcbFingerprint.elapsedMs)
-    }
-
     return NextResponse.json(aqiData, {
       status: 200,
-      headers,
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=900',
+      },
     })
   } catch (err: any) {
     console.error('[API /api/air-quality] Error:', err?.message || err)

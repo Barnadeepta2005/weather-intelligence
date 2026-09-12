@@ -13,7 +13,6 @@
 
 import type { UnifiedAirQuality } from '@/lib/types'
 import { calculateCPCBAQI, classifyCPCB, type PollutantReading } from './cpcb-calculator'
-import crypto from 'crypto'
 
 interface CacheEntry {
   data: UnifiedAirQuality
@@ -25,19 +24,6 @@ const stationCache = new Map<string, CacheEntry>()
 const CACHE_TTL_MS = 20 * 60 * 1000
 
 const DATA_GOV_RESOURCE_ID = '3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69'
-
-export interface CpcbFingerprintDiagnostic {
-  keyPresent: boolean
-  keyLength: number
-  keySha256: string
-  keyTrimmedSha256: string
-  httpStatus: number | null
-  bodyLength: number | null
-  errorString: string | null
-  elapsedMs: number
-}
-
-export let lastCpcbFingerprint: CpcbFingerprintDiagnostic | null = null
 
 function getApiKey(): string | null {
   return process.env.DATA_GOV_IN_API_KEY?.trim() || null
@@ -74,28 +60,14 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
     return cached.data
   }
 
-  const rawKey = process.env.DATA_GOV_IN_API_KEY || ''
-  const keyPresent = Boolean(rawKey && rawKey.trim().length > 0)
-  const keyLength = rawKey.length
-  const keySha256 = keyPresent ? crypto.createHash('sha256').update(rawKey, 'utf8').digest('hex') : 'none'
-  const keyTrimmedSha256 = keyPresent ? crypto.createHash('sha256').update(rawKey.trim(), 'utf8').digest('hex') : 'none'
-  const startTime = Date.now()
-
-  if (!keyPresent) {
-    lastCpcbFingerprint = {
-      keyPresent: false,
-      keyLength: 0,
-      keySha256: 'none',
-      keyTrimmedSha256: 'none',
-      httpStatus: null,
-      bodyLength: null,
-      errorString: 'KEY_NOT_CONFIGURED',
-      elapsedMs: 0,
+  const apiKey = getApiKey()
+  if (!apiKey) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[CPCB Provider] DATA_GOV_IN_API_KEY not configured. Station "${stationName}" falling back to model.`)
     }
     return null
   }
 
-  const apiKey = getApiKey()!
   const endpoint =
     `https://api.data.gov.in/resource/${DATA_GOV_RESOURCE_ID}` +
     `?api-key=${apiKey}&format=json&limit=10&filters[station]=${encodeURIComponent(stationName)}`
@@ -109,31 +81,6 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
       },
     })
 
-    const elapsedMs = Date.now() - startTime
-    const rawText = await res.text()
-    const bodyLength = rawText.length
-
-    let errorString: string | null = null
-    if (!res.ok) {
-      try {
-        const parsed = JSON.parse(rawText)
-        errorString = parsed?.error || parsed?.message || `HTTP ${res.status}`
-      } catch {
-        errorString = `HTTP ${res.status}`
-      }
-    }
-
-    lastCpcbFingerprint = {
-      keyPresent: true,
-      keyLength,
-      keySha256,
-      keyTrimmedSha256,
-      httpStatus: res.status,
-      bodyLength,
-      errorString: errorString ? String(errorString).slice(0, 100) : null,
-      elapsedMs,
-    }
-
     if (!res.ok) {
       if (res.status === 429) {
         console.warn(`[CPCB Provider] Data.gov.in rate limit encountered for station "${stationName}".`)
@@ -143,12 +90,7 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
       return null
     }
 
-    let payload: any = null
-    try {
-      payload = JSON.parse(rawText)
-    } catch {
-      return null
-    }
+    const payload = await res.json()
     const records = payload?.records
 
     if (!Array.isArray(records) || records.length === 0) {
@@ -250,17 +192,6 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
 
     return unified
   } catch (err: any) {
-    const elapsedMs = Date.now() - startTime
-    lastCpcbFingerprint = {
-      keyPresent: true,
-      keyLength,
-      keySha256,
-      keyTrimmedSha256,
-      httpStatus: null,
-      bodyLength: null,
-      errorString: err?.name || 'FetchError',
-      elapsedMs,
-    }
     console.warn(`[CPCB Provider] Error fetching station "${stationName}":`, err?.message || err)
     return null
   }
