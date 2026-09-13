@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchWithTimeout } from '@/lib/open-meteo'
 import { mapWeatherCode } from '@/lib/weather-utils'
 import { getAirQuality } from '@/lib/air-quality/service'
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit'
 import type { SavedLocationWeather } from '@/lib/types'
 
 interface SavedLocationInput {
@@ -14,9 +15,26 @@ interface SavedLocationInput {
   timezone?: string
 }
 
+interface OpenMeteoBatchForecast {
+  current?: {
+    temperature_2m?: number
+    apparent_temperature?: number
+    weather_code?: number
+  }
+  daily?: {
+    temperature_2m_max?: number[]
+    temperature_2m_min?: number[]
+  }
+}
+
 const MAX_SAVED_LOCATIONS = 16
 
 export async function POST(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, 'saved-weather', { limit: 60, windowMs: 60_000 })
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
+
   try {
     const body = await request.json().catch(() => ({}))
     const rawLocations = body?.locations
@@ -59,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Fetch Open-Meteo batch forecast in a single network call
-    let forecastList: any[] = []
+    let forecastList: (OpenMeteoBatchForecast | null)[] = []
     let openMeteoSuccess = false
 
     if (validItems.length > 0) {
@@ -77,8 +95,10 @@ export async function POST(request: NextRequest) {
           forecastList = Array.isArray(json) ? json : [json]
           openMeteoSuccess = true
         }
-      } catch (err) {
-        console.warn('[API /api/saved-weather] Open-Meteo batch request failed:', err)
+      } catch (err: unknown) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[API /api/saved-weather] Open-Meteo batch request failed:', err)
+        }
       }
     }
 
@@ -125,7 +145,7 @@ export async function POST(request: NextRequest) {
       const wCode = typeof current.weather_code === 'number' ? current.weather_code : 0
       const mapped = mapWeatherCode(wCode)
 
-      const tempC = Math.round(current.temperature_2m)
+      const tempC = Math.round(current.temperature_2m ?? 0)
       const feelsLikeC =
         typeof current.apparent_temperature === 'number'
           ? Math.round(current.apparent_temperature)
@@ -200,10 +220,13 @@ export async function POST(request: NextRequest) {
         },
       }
     )
-  } catch (error: any) {
-    console.error('[API /api/saved-weather] Unhandled error:', error)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to process saved weather batch request'
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[API /api/saved-weather] Unhandled error:', message)
+    }
     return NextResponse.json(
-      { error: error?.message || 'Failed to process saved weather batch request' },
+      { error: message },
       { status: 500 }
     )
   }

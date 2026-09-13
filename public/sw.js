@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wi-shell-v1';
+const CACHE_NAME = 'atmos-shell-v3';
 
-// Application shell assets to pre-cache
+// Application shell assets to pre-cache (minimal static shell only; dynamic /app document is NOT precached)
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.webmanifest',
@@ -81,7 +81,7 @@ self.addEventListener('fetch', (event) => {
           const cachedShell = await caches.match('/');
           if (cachedShell) return cachedShell;
           return new Response(
-            '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Weather Intelligence - Offline</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:sans-serif;padding:30px;background:#f6f4ee;color:#111;"><h1>WEATHER INTELLIGENCE</h1><p><strong>OFFLINE:</strong> Please connect to the internet to retrieve live weather, air quality, and radar data.</p></body></html>',
+            '<!DOCTYPE html><html><head><meta charset="utf-8"><title>ATMOS WEATHER - Offline</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:sans-serif;padding:30px;background:#f6f4ee;color:#111;"><h1>ATMOS WEATHER</h1><p><strong>OFFLINE:</strong> Please connect to the internet to retrieve live weather, air quality, and radar data.</p></body></html>',
             {
               status: 503,
               statusText: 'Service Unavailable',
@@ -159,7 +159,7 @@ self.addEventListener('push', (event) => {
   const isTest = payload.type === 'test' || data.type === 'test';
 
   const title = isTest
-    ? (notification.title || data.title || payload.title || 'Weather Intelligence — Test')
+    ? (notification.title || data.title || payload.title || 'ATMOS WEATHER — Test')
     : (notification.title || data.title || 'Weather Alert');
 
   const body = isTest
@@ -169,8 +169,8 @@ self.addEventListener('push', (event) => {
   const icon = notification.icon || data.icon || '/icon-192x192.png';
   const badge = notification.badge || data.badge || '/icon-192x192.png';
   const tag = isTest
-    ? 'weather-intelligence-test'
-    : (notification.tag || data.tag || 'weather-intelligence-alert');
+    ? 'atmos-weather-test'
+    : (notification.tag || data.tag || 'atmos-weather-alert');
 
   const notificationOptions = {
     body,
@@ -179,7 +179,7 @@ self.addEventListener('push', (event) => {
     tag,
     renotify: true,
     data: {
-      url: data.url || payload.url || '/',
+      url: data.url || payload.url || '/app',
       type: isTest ? 'test' : 'alert',
       timestamp: Date.now(),
       ...data,
@@ -215,14 +215,14 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/app';
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       // If a window is already open at this origin, focus it
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          if ('navigate' in client && targetUrl !== '/') {
+          if ('navigate' in client && targetUrl !== '/app') {
             client.navigate(targetUrl);
           }
           return client.focus();

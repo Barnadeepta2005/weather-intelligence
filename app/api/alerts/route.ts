@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAlertsForLocation } from '@/lib/alerts/imd-service'
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, 'alerts', { limit: 30, windowMs: 60_000 })
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
+
   const { searchParams } = new URL(request.url)
   const latStr = searchParams.get('latitude') || searchParams.get('lat')
   const lonStr = searchParams.get('longitude') || searchParams.get('lon')
@@ -80,8 +86,11 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=600',
       },
     })
-  } catch (err: any) {
-    console.warn('[API /api/alerts] Error retrieving alerts:', err?.message || err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Weather alerts temporarily unavailable'
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[API /api/alerts] Error retrieving alerts:', message)
+    }
     // Fail-safe: Return clean empty state rather than 500/502 to protect UI
     return NextResponse.json(
       {
@@ -90,7 +99,7 @@ export async function GET(request: NextRequest) {
         lastUpdated: new Date().toISOString(),
         attribution: 'India Meteorological Department (IMD)',
         isLive: false,
-        error: err?.message || 'Weather alerts temporarily unavailable',
+        error: message,
       },
       {
         status: 200,

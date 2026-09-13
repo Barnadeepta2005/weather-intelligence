@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWeatherTrends } from '@/lib/trends/service'
 import type { TrendRange } from '@/lib/trends/types'
 import { DEFAULT_COORDINATES } from '@/lib/open-meteo'
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, 'weather-history', { limit: 60, windowMs: 60_000 })
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
+
   const { searchParams } = new URL(request.url)
   const latStr = searchParams.get('latitude') || searchParams.get('lat')
   const lonStr = searchParams.get('longitude') || searchParams.get('lon')
@@ -40,7 +46,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const message =
       error instanceof Error
         ? error.message

@@ -84,9 +84,11 @@ export function TopBar({
         setSelectedIndex(-1)
         setIsSearching(false)
       }
-    } catch (err: any) {
-      if (err.name !== 'AbortError' && requestId === activeRequestIdRef.current) {
-        setSearchError(err?.message || 'Could not reach the location service.')
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
+      if (requestId === activeRequestIdRef.current) {
+        const message = err instanceof Error ? err.message : 'Could not reach the location service.'
+        setSearchError(message)
         setResults([])
         setIsSearching(false)
       }
@@ -186,7 +188,7 @@ export function TopBar({
   return (
     <header className="topbar">
       <div>
-        <p className="eyebrow">WEATHER INTELLIGENCE / 01</p>
+        <p className="eyebrow">ATMOS WEATHER / 01</p>
         <h1>Know what&apos;s coming.</h1>
       </div>
 

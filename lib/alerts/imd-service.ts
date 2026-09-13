@@ -355,8 +355,9 @@ async function fetchAndParseNationalAlerts(): Promise<Map<string, WeatherAlert[]
           alertsMap.set(districtId, existing)
         }
       }
-    } catch (err: any) {
-      console.warn('[IMD Alerts] Failed to parse Nowcast feed:', err?.message || err)
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      console.warn('[IMD Alerts] Failed to parse Nowcast feed:', errMsg)
     }
   }
 
@@ -407,8 +408,9 @@ async function fetchAndParseNationalAlerts(): Promise<Map<string, WeatherAlert[]
           }
         }
       }
-    } catch (err: any) {
-      console.warn('[IMD Alerts] Failed to parse Daily Warning feed:', err?.message || err)
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      console.warn('[IMD Alerts] Failed to parse Daily Warning feed:', errMsg)
     }
   }
 
@@ -445,8 +447,9 @@ export async function getAlertsForLocation(
         timestamp: now,
         alertsByDistrictId: alertsByDistrict,
       }
-    } catch (err: any) {
-      console.warn('[IMD Alerts Service] Upstream fetch error:', err?.message || err)
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      console.warn('[IMD Alerts Service] Upstream fetch error:', errMsg)
       // Fallback to existing stale cache if available
       if (memoryCache) {
         alertsByDistrict = memoryCache.alertsByDistrictId

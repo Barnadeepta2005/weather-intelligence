@@ -73,11 +73,12 @@ export function useSavedLocationsWeather(locations: SavedLocationRecord[], user:
           return next
         })
       }
-    } catch (err: any) {
-      if (err.name === 'AbortError') return
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
       if (requestId === activeRequestRef.current) {
         console.warn('[useSavedLocationsWeather] Error fetching saved weather:', err)
-        setError(err?.message || 'Failed to load weather for saved locations')
+        const message = err instanceof Error ? err.message : 'Failed to load weather for saved locations'
+        setError(message)
       }
     } finally {
       if (requestId === activeRequestRef.current) {

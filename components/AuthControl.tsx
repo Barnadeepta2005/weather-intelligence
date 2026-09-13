@@ -27,8 +27,11 @@ export interface AuthControlProps {
 }
 
 export function friendlyAuthError(error: unknown): string {
-  console.error('[Firebase Auth Error]', error)
   const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : ''
+  const isRoutine = code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request'
+  if (!isRoutine && process.env.NODE_ENV !== 'production') {
+    console.warn('[Firebase Auth Diagnostic]', error)
+  }
   const messages: Record<string, string> = {
     'auth/email-already-in-use': 'An account already exists for this email address. Switch to sign in.',
     'auth/invalid-email': 'Enter a valid email address.',
@@ -52,7 +55,7 @@ export async function createProfile(user: User) {
     await setDoc(
       doc(getFirebaseFirestore(), 'users', user.uid),
       {
-        displayName: user.displayName || user.email || 'Weather Intelligence user',
+        displayName: user.displayName || user.email || 'ATMOS WEATHER user',
         email: user.email || '',
         createdAt: serverTimestamp(),
       },
@@ -258,7 +261,7 @@ export function AuthControl({
             <button type="button" className="auth-close" onClick={close} aria-label="Close account dialog">
               <X size={18} />
             </button>
-            <p className="eyebrow">WEATHER INTELLIGENCE / ACCOUNT</p>
+            <p className="eyebrow">ATMOS WEATHER / ACCOUNT</p>
             <h2 id="auth-title">{mode === 'signin' ? 'Welcome back.' : 'Save your places.'}</h2>
             <p className="auth-copy">
               {mode === 'signin'

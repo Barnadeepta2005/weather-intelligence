@@ -5,15 +5,34 @@ import './globals.css'
 import { PWAProvider } from '@/components/PWAProvider'
 
 export const metadata: Metadata = {
-  title: 'Weather Intelligence',
-  description: 'Intelligent weather, air quality, radar and alerts.',
-  applicationName: 'Weather Intelligence',
+  title: 'ATMOS WEATHER',
+  description: 'Real-time weather, air quality, radar and official weather alerts — intelligently brought together.',
+  applicationName: 'ATMOS WEATHER',
   manifest: '/manifest.webmanifest',
-  generator: 'Weather Intelligence',
+  generator: 'ATMOS WEATHER',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Weather Intelligence',
+    title: 'ATMOS WEATHER',
+  },
+  openGraph: {
+    title: 'ATMOS WEATHER',
+    description: 'Real-time weather, air quality, radar and official weather alerts — intelligently brought together.',
+    siteName: 'ATMOS WEATHER',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'ATMOS WEATHER',
+    description: 'Real-time weather, air quality, radar and official weather alerts — intelligently brought together.',
   },
   formatDetection: {
     telephone: false,

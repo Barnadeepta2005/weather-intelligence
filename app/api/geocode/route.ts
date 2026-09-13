@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchLocations } from '@/lib/geocoding'
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, 'geocode', { limit: 60, windowMs: 60_000 })
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
+
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q')
 
@@ -39,7 +45,7 @@ export async function GET(request: NextRequest) {
         },
       }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Geocoding service unavailable'
     return NextResponse.json(
       { error: message, results: [] },

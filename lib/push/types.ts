@@ -20,10 +20,12 @@ export const DEFAULT_PUSH_CATEGORIES: PushCategories = {
 
 export interface PushSubscriptionRecord {
   id: string
+  deviceId: string
   token: string
   endpoint?: string
-  deviceType: 'mobile' | 'desktop' | 'tablet'
-  userAgent: string
+  platform: string
+  deviceType?: 'mobile' | 'desktop' | 'tablet'
+  userAgent?: string
   createdAt: string
   updatedAt: string
   enabled: boolean

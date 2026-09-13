@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRainViewerMetadata } from '@/lib/rainviewer'
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, 'radar', { limit: 60, windowMs: 60_000 })
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
+
   const { searchParams } = new URL(request.url)
   const tzParam = searchParams.get('timezone')
   const timezone = tzParam ? tzParam.slice(0, 50) : undefined
@@ -15,7 +21,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=600',
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to retrieve radar metadata'
     return NextResponse.json(
       { error: message },

@@ -1,27 +1,34 @@
+import 'server-only'
+
 import type { PushNotificationPayload, PushSubscriptionRecord } from './types'
+import { getAdminMessaging, isFirebaseAdminConfigured } from '@/lib/firebase-admin'
 
 /**
  * Server-side push notification dispatcher.
- * Abstraction layer designed for ₹0 recurring cost on Vercel Hobby,
- * while supporting direct manual tests and future background scheduling.
+ * Migrated to Firebase Admin SDK HTTP v1 protocol.
+ * Supports ₹0 development fallback when credentials are not configured.
  */
 
 export interface SendResult {
   subscriptionId: string
   success: boolean
   error?: string
+  tokenInvalid?: boolean
 }
 
 /**
  * Dispatch a push notification payload to a specific user subscription record.
+ * Uses Firebase Admin SDK HTTP v1 messaging.
  */
 export async function sendToSubscription(
   subscription: PushSubscriptionRecord,
   payload: PushNotificationPayload
 ): Promise<SendResult> {
+  const subId = subscription.id || subscription.deviceId || 'unknown-device'
+
   if (!subscription.enabled) {
     return {
-      subscriptionId: subscription.id,
+      subscriptionId: subId,
       success: false,
       error: 'Subscription is disabled for this device.',
     }
@@ -35,61 +42,73 @@ export async function sendToSubscription(
     const catKey = payload.data.category as keyof typeof subscription.categories
     if (subscription.categories && subscription.categories[catKey] === false) {
       return {
-        subscriptionId: subscription.id,
+        subscriptionId: subId,
         success: false,
         error: `User opted out of category: ${catKey}`,
       }
     }
   }
 
-  // If FCM server key or service account is configured in environment, dispatch to FCM
-  const fcmServerKey = process.env.FIREBASE_MESSAGING_SERVER_KEY
-  if (fcmServerKey && subscription.token && !subscription.token.startsWith('local-')) {
+  // If Firebase Admin is configured and token is a real FCM token, dispatch via Firebase Admin HTTP v1
+  if (
+    isFirebaseAdminConfigured() &&
+    subscription.token &&
+    !subscription.token.startsWith('local-') &&
+    !subscription.token.startsWith('device-token-')
+  ) {
     try {
-      const response = await fetch('https://fcm.googleapis.com/fcm/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `key=${fcmServerKey}`,
+      const messaging = getAdminMessaging()
+      const clickUrl = payload.url || (payload.data?.url as string) || '/app'
+
+      await messaging.send({
+        token: subscription.token,
+        notification: {
+          title: payload.title,
+          body: payload.body,
         },
-        body: JSON.stringify({
-          to: subscription.token,
+        data: {
+          type: payload.type || 'alert',
+          title: payload.title,
+          body: payload.body,
+          url: clickUrl,
+          timestamp: String(payload.data?.timestamp || Date.now()),
+          ...(payload.data?.category ? { category: String(payload.data.category) } : {}),
+        },
+        webpush: {
           notification: {
-            title: payload.title,
-            body: payload.body,
             icon: payload.icon || '/icon-192x192.png',
+            badge: payload.badge || '/icon-192x192.png',
+            tag: payload.tag || 'atmos-weather-alert',
           },
-          data: payload.data || {},
-        }),
+          fcmOptions: {
+            link: clickUrl,
+          },
+        },
       })
 
-      if (!response.ok) {
-        const errText = await response.text()
-        return {
-          subscriptionId: subscription.id,
-          success: false,
-          error: `FCM dispatch error (${response.status}): ${errText}`,
-        }
-      }
-
       return {
-        subscriptionId: subscription.id,
+        subscriptionId: subId,
         success: true,
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Unknown network failure'
+      const errObj = err as { code?: string; message?: string }
+      const isUnregistered =
+        errObj?.code === 'messaging/registration-token-not-registered' ||
+        errObj?.code === 'messaging/invalid-registration-token'
+
       return {
-        subscriptionId: subscription.id,
+        subscriptionId: subId,
         success: false,
-        error: msg,
+        error: err instanceof Error ? err.message : 'FCM v1 dispatch error',
+        tokenInvalid: isUnregistered,
       }
     }
   }
 
-  // Development / ₹0 environment without paid server key:
+  // Development / ₹0 environment without service credentials:
   // Successfully validate and acknowledge delivery.
   return {
-    subscriptionId: subscription.id,
+    subscriptionId: subId,
     success: true,
   }
 }

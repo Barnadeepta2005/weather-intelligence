@@ -84,8 +84,8 @@ export function WeatherTrends({
         setLoading(false)
         setError(null)
       }
-    } catch (err: any) {
-      if (err.name === 'AbortError') return
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
       if (fetchId === activeFetchIdRef.current) {
         setLoading(false)
         setError('Trend data unavailable right now.')

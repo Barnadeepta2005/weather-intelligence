@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAirQuality } from '@/lib/air-quality/service'
 import { DEFAULT_COORDINATES } from '@/lib/open-meteo'
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, 'air-quality', { limit: 30, windowMs: 60_000 })
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
+
   const { searchParams } = new URL(request.url)
   const latStr = searchParams.get('latitude') || searchParams.get('lat')
   const lonStr = searchParams.get('longitude') || searchParams.get('lon')
@@ -46,8 +52,11 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=900',
       },
     })
-  } catch (err: any) {
-    console.error('[API /api/air-quality] Error:', err?.message || err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to retrieve air quality data'
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[API /api/air-quality] Error:', message)
+    }
     return NextResponse.json(
       {
         index: null,
@@ -61,7 +70,7 @@ export async function GET(request: NextRequest) {
         no2: null,
         timestamp: new Date().toISOString(),
         isFallback: true,
-        error: err?.message || 'Failed to retrieve air quality data',
+        error: message,
       },
       { status: 502 }
     )

@@ -2,6 +2,7 @@
 
 import { Grid2X2, MapPin, Bell, Activity, CloudSun, UserRound, LogOut, Settings } from 'lucide-react'
 import type { User } from 'firebase/auth'
+import { AtmosWeatherMark } from '@/components/weather-icons/AtmosWeatherMark'
 
 export type NavActionId = 'home' | 'trends' | 'location' | 'notifications' | 'intelligence'
 
@@ -33,13 +34,13 @@ export function Sidebar({
         type="button"
         className={`brand-lockup brand-btn ${activeNav === 'home' ? 'active' : ''}`}
         onClick={() => onNavigate?.('home')}
-        aria-label="Weather Home"
-        title="Scroll to Primary Weather Dashboard"
+        aria-label="ATMOS WEATHER Home"
+        title="Scroll to ATMOS WEATHER Dashboard"
       >
-        <span className="brand-mark">
-          <CloudSun size={22} />
+        <span className="brand-mark" style={{ padding: '2px' }}>
+          <AtmosWeatherMark size={28} />
         </span>
-        <span>WI</span>
+        <span>ATMOS</span>
       </button>
 
       {/* PRIMARY RAIL CONTROLS */}
@@ -82,8 +83,8 @@ export function Sidebar({
           type="button"
           className={`nav-item ${activeNav === 'intelligence' ? 'active' : ''}`}
           onClick={() => onNavigate?.('intelligence')}
-          aria-label="Weather Intelligence"
-          title="Advanced Weather Intelligence Decision Support"
+          aria-label="ATMOS WEATHER Intelligence"
+          title="ATMOS WEATHER — Advanced Decision Support"
         >
           <Activity size={19} />
         </button>

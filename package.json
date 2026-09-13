@@ -1,5 +1,5 @@
 {
-  "name": "weather-intelligence",
+  "name": "atmos-weather",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@12.3.4",
@@ -11,6 +11,7 @@
   "dependencies": {
     "@vercel/analytics": "1.6.1",
     "firebase": "^12.19.0",
+    "firebase-admin": "^14.4.0",
     "lucide-react": "^1.16.0",
     "maplibre-gl": "^6.9.0",
     "next": "16.3.3",
@@ -18,12 +19,10 @@
     "react-dom": "^19"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8.5",
-    "tailwindcss": "^4.3.3",
     "typescript": "5.7.3"
   },
   "pnpm": {

@@ -191,8 +191,9 @@ export async function fetchCPCBStationAQI(stationName: string): Promise<UnifiedA
     })
 
     return unified
-  } catch (err: any) {
-    console.warn(`[CPCB Provider] Error fetching station "${stationName}":`, err?.message || err)
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err)
+    console.warn(`[CPCB Provider] Error fetching station "${stationName}":`, errMsg)
     return null
   }
 }

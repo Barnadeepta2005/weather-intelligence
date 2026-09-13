@@ -83,8 +83,9 @@ export async function getAirQuality({
         timezone,
         isFallback: true, // Marked as fallback
       })
-    } catch (fallbackErr: any) {
-      console.warn('[AirQualityService] India fallback model fetch failed:', fallbackErr?.message)
+    } catch (fallbackErr: unknown) {
+      const errMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)
+      console.warn('[AirQualityService] India fallback model fetch failed:', errMsg)
     }
   } else {
     // 3. International location: Global Open-Meteo CAMS atmospheric model
@@ -95,8 +96,9 @@ export async function getAirQuality({
         timezone,
         isFallback: false,
       })
-    } catch (globalErr: any) {
-      console.warn('[AirQualityService] Global model fetch failed:', globalErr?.message)
+    } catch (globalErr: unknown) {
+      const errMsg = globalErr instanceof Error ? globalErr.message : String(globalErr)
+      console.warn('[AirQualityService] Global model fetch failed:', errMsg)
     }
   }
 

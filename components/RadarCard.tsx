@@ -104,9 +104,10 @@ export function RadarCard({
       // Default to the latest available frame
       setActiveFrameIndex(data.frames.length - 1)
       setLoadingRadar(false)
-    } catch (err: any) {
+    } catch (err: unknown) {
       devError('[RADAR DIAG] Radar metadata error:', err)
-      setRadarError(err?.message || 'Precipitation radar could not be loaded.')
+      const message = err instanceof Error ? err.message : 'Precipitation radar could not be loaded.'
+      setRadarError(message)
       setLoadingRadar(false)
     }
   }, [timezone])
@@ -415,9 +416,10 @@ export function RadarCard({
         requestAnimationFrame(() => {
           map.resize()
         })
-      } catch (err: any) {
+      } catch (err: unknown) {
         devError('[RADAR DIAG] MapLibre init error:', err)
-        setMapError(err?.message || 'MapLibre failed to initialize.')
+        const message = err instanceof Error ? err.message : 'MapLibre failed to initialize.'
+        setMapError(message)
       }
     }
 

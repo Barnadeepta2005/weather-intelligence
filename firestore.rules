@@ -16,7 +16,30 @@ service cloud.firestore {
       }
 
       match /pushSubscriptions/{subscriptionId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, delete: if request.auth != null && request.auth.uid == userId;
+
+        allow create: if request.auth != null && request.auth.uid == userId
+          && subscriptionId == request.resource.data.deviceId
+          && request.resource.data.keys().hasOnly(['deviceId', 'token', 'platform', 'createdAt', 'updatedAt', 'enabled', 'categories'])
+          && request.resource.data.deviceId is string
+          && request.resource.data.deviceId.size() > 0
+          && request.resource.data.deviceId.size() <= 128
+          && request.resource.data.token is string
+          && request.resource.data.token.size() > 0
+          && request.resource.data.token.size() <= 2048
+          && request.resource.data.platform is string
+          && request.resource.data.platform.size() <= 32
+          && request.resource.data.enabled is bool
+          && request.resource.data.createdAt is string
+          && request.resource.data.updatedAt is string;
+
+        allow update: if request.auth != null && request.auth.uid == userId
+          && request.resource.data.deviceId == resource.data.deviceId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['token', 'platform', 'enabled', 'categories', 'updatedAt'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['token']) || (request.resource.data.token is string && request.resource.data.token.size() <= 2048))
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['platform']) || (request.resource.data.platform is string && request.resource.data.platform.size() <= 32))
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['enabled']) || request.resource.data.enabled is bool)
+          && request.resource.data.updatedAt is string;
       }
     }
   }

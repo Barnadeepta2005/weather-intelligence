@@ -72,7 +72,7 @@ export function SettingsModal({
         </button>
 
         <p className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Settings size={13} /> WEATHER INTELLIGENCE / PREFERENCES
+          <Settings size={13} /> ATMOS WEATHER / PREFERENCES
         </p>
         <h2 id="settings-title">Settings</h2>
         <p className="settings-copy">
@@ -171,7 +171,13 @@ export function SettingsModal({
           <div className="settings-location-info">
             <strong>{currentLocation?.name || 'Kolkata'}, {currentLocation?.country || 'India'}</strong>
             <small>
-              Lat: {currentLocation?.latitude?.toFixed(2)}° N / Lon: {currentLocation?.longitude?.toFixed(2)}° E
+              {(() => {
+                const lat = currentLocation?.latitude ?? 22.57
+                const lon = currentLocation?.longitude ?? 88.36
+                const latStr = `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'}`
+                const lonStr = `${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? 'E' : 'W'}`
+                return `Lat: ${latStr} / Lon: ${lonStr}`
+              })()}
             </small>
           </div>
         </div>

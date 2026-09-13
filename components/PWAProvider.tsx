@@ -34,6 +34,11 @@ const PWAContext = createContext<PWAContextType>({
   triggerInstall: () => {},
 })
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
+
 export function usePWA() {
   return useContext(PWAContext)
 }
@@ -44,7 +49,7 @@ interface PWAProviderProps {
 
 export function PWAProvider({ children }: PWAProviderProps) {
   const [isOffline, setIsOffline] = useState(false)
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isStandalone, setIsStandalone] = useState(false)
   const [isIosSafari, setIsIosSafari] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
@@ -66,7 +71,9 @@ export function PWAProvider({ children }: PWAProviderProps) {
           }
         })
         .catch((err) => {
-          console.warn('[PWA] Service Worker registration failed:', err)
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('[PWA] Service Worker registration failed:', err)
+          }
         })
     }
 
@@ -128,10 +135,11 @@ export function PWAProvider({ children }: PWAProviderProps) {
 
     // Detect iOS Safari (including iPadOS with desktop user agent)
     const userAgent = window.navigator.userAgent.toLowerCase()
-    const isIos =
-      (/iphone|ipad|ipod/.test(userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) &&
-      !(window as any).MSStream
+    const isMacTouch =
+      ((navigator as { userAgentData?: { platform?: string } }).userAgentData?.platform === 'macOS' ||
+        /macintosh|macintel/.test(userAgent)) &&
+      navigator.maxTouchPoints > 1
+    const isIos = (/iphone|ipad|ipod/.test(userAgent) || isMacTouch) && !(window as { MSStream?: unknown }).MSStream
     const isSafari = /safari/.test(userAgent) && !/chrome|crios|fxios|edg|android/.test(userAgent)
 
     if (isIos && isSafari) {
@@ -145,7 +153,7 @@ export function PWAProvider({ children }: PWAProviderProps) {
     // Capture beforeinstallprompt (Chromium / Edge / Android)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
-      setDeferredPrompt(e)
+      setDeferredPrompt(e as BeforeInstallPromptEvent)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -159,7 +167,6 @@ export function PWAProvider({ children }: PWAProviderProps) {
         console.log('[PWA] Application successfully installed.')
       }
     }
-
     window.addEventListener('appinstalled', handleAppInstalled)
 
     return () => {
@@ -169,16 +176,12 @@ export function PWAProvider({ children }: PWAProviderProps) {
     }
   }, [])
 
-  // Trigger installation or instruction modal
+  // 3. User-Initiated Install Action
   const triggerInstall = useCallback(async () => {
-    if (isIosSafari) {
-      // iOS Safari instructions (Safari does not support beforeinstallprompt)
-      setModalType('ios')
-      setModalOpen(true)
-    } else if (deferredPrompt) {
-      // Direct native prompt (Chrome, Edge, Android)
+    if (deferredPrompt) {
+      // Direct native prompt (Chrome / Android / Chromium Desktop)
       try {
-        deferredPrompt.prompt()
+        await deferredPrompt.prompt()
         const { outcome } = await deferredPrompt.userChoice
         if (process.env.NODE_ENV !== 'production') {
           console.log('[PWA] Install prompt outcome:', outcome)
@@ -187,11 +190,17 @@ export function PWAProvider({ children }: PWAProviderProps) {
           setDeferredPrompt(null)
         }
       } catch (err) {
-        console.warn('[PWA] Install prompt error:', err)
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[PWA] Install prompt error:', err)
+        }
       }
     } else if (isAndroid) {
       // Android browser fallback (when beforeinstallprompt is unavailable or dismissed)
       setModalType('android')
+      setModalOpen(true)
+    } else if (isIosSafari) {
+      // iOS Safari instructions (Safari does not support beforeinstallprompt)
+      setModalType('ios')
       setModalOpen(true)
     } else {
       // Unsupported desktop browser (e.g. Firefox, Safari macOS)
@@ -256,9 +265,9 @@ export function PWAProvider({ children }: PWAProviderProps) {
                 <span className="pwa-modal-tag">PWA INSTALLATION</span>
                 <h3 id="pwa-modal-title" className="pwa-modal-title">
                   {modalType === 'ios'
-                    ? 'Add Weather Intelligence to your Home Screen'
+                    ? 'Add ATMOS WEATHER to your Home Screen'
                     : modalType === 'android'
-                    ? 'Install Weather Intelligence'
+                    ? 'Install ATMOS WEATHER'
                     : 'App Installation'}
                 </h3>
               </div>
@@ -277,7 +286,7 @@ export function PWAProvider({ children }: PWAProviderProps) {
               {modalType === 'ios' ? (
                 <div className="pwa-instructions-list">
                   <p className="pwa-instruction-intro">
-                    Add Weather Intelligence to your Home Screen for full-screen standalone access:
+                    Add ATMOS WEATHER to your Home Screen for full-screen standalone access:
                   </p>
                   <div className="pwa-step-item">
                     <span className="pwa-step-num">1</span>
@@ -304,7 +313,7 @@ export function PWAProvider({ children }: PWAProviderProps) {
               ) : modalType === 'android' ? (
                 <div className="pwa-instructions-list">
                   <p className="pwa-instruction-intro">
-                    Install Weather Intelligence to your device for standalone access:
+                    Install ATMOS WEATHER to your device for standalone access:
                   </p>
                   <div className="pwa-step-item">
                     <span className="pwa-step-num">1</span>
@@ -338,7 +347,7 @@ export function PWAProvider({ children }: PWAProviderProps) {
                     App installation is not available in this browser.
                   </p>
                   <div className="pwa-instruction-note" style={{ background: '#f1f5f9', borderLeftColor: 'var(--ink)' }}>
-                    To install Weather Intelligence as a standalone app, open this page in <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong>, or <strong>Brave</strong>.
+                    To install ATMOS WEATHER as a standalone app, open this page in <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong>, or <strong>Brave</strong>.
                   </div>
                 </div>
               )}
@@ -375,8 +384,8 @@ export function InstallAppButton({ className = '' }: { className?: string }) {
       type="button"
       onClick={triggerInstall}
       className={`install-app-btn ${className}`}
-      aria-label="Install App"
-      title="Install Weather Intelligence App"
+      aria-label="Install ATMOS WEATHER"
+      title="Install ATMOS WEATHER App"
     >
       <Download size={14} />
       <span>INSTALL APP</span>
@@ -398,8 +407,8 @@ export function MobileInstallButton({ className = '' }: { className?: string }) 
       type="button"
       onClick={triggerInstall}
       className={`mobile-install-btn ${className}`}
-      aria-label="Install App"
-      title="Install Weather Intelligence App"
+      aria-label="Install ATMOS WEATHER"
+      title="Install ATMOS WEATHER App"
     >
       <Download size={18} />
     </button>

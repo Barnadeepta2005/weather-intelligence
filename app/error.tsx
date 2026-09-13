@@ -65,7 +65,7 @@ export default function ErrorBoundary({
                 color: 'var(--muted, #5d5a52)',
               }}
             >
-              WEATHER INTELLIGENCE / RECOVERY
+              ATMOS WEATHER / RECOVERY
             </p>
             <h1
               style={{

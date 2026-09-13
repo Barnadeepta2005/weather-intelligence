@@ -2,13 +2,14 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Weather Intelligence',
-    short_name: 'Weather',
-    description: 'Intelligent weather, air quality, radar and alerts',
-    start_url: '/',
+    name: 'ATMOS WEATHER',
+    short_name: 'ATMOS',
+    description: 'Real-time weather, air quality, radar and official weather alerts.',
+    start_url: '/app',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait-primary',
+    categories: ['weather', 'utilities', 'productivity'],
     background_color: '#f6f4ee',
     theme_color: '#f3efe6',
     icons: [

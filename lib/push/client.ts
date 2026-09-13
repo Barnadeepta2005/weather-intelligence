@@ -127,7 +127,9 @@ export async function registerDevicePush(
         serviceWorkerRegistration: swReg,
       })
     } catch (fcmErr) {
-      console.warn('[FCM Client] Standard getToken failed, attempting fallback subscription:', fcmErr)
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[FCM Client] Standard getToken failed, attempting fallback subscription:', fcmErr)
+      }
       // Fallback: Web Push standard subscription
       try {
         const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
@@ -146,16 +148,15 @@ export async function registerDevicePush(
 
     saveLocalPushCategories(categories)
 
-    // 4. Save to Firestore under authenticated user scope
+    // 4. Save to Firestore under authenticated user scope with strict schema compliance
     if (user && fcmToken) {
       try {
         const db = getFirebaseFirestore()
         const subDocRef = doc(db, 'users', user.uid, 'pushSubscriptions', deviceId)
-        const record: PushSubscriptionRecord = {
-          id: deviceId,
+        const record = {
+          deviceId,
           token: fcmToken,
-          deviceType,
-          userAgent,
+          platform: deviceType,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           enabled: true,
@@ -163,7 +164,9 @@ export async function registerDevicePush(
         }
         await setDoc(subDocRef, record, { merge: true })
       } catch (dbErr) {
-        console.warn('[FCM Client] Firestore subscription sync failed:', dbErr)
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[FCM Client] Firestore subscription sync failed:', dbErr)
+        }
       }
     }
 
@@ -249,7 +252,18 @@ export async function getDeviceSubscriptionRecord(
     const subDocRef = doc(db, 'users', user.uid, 'pushSubscriptions', deviceId)
     const snap = await getDoc(subDocRef)
     if (snap.exists()) {
-      return snap.data() as PushSubscriptionRecord
+      const data = snap.data()
+      return {
+        id: snap.id,
+        deviceId: (data.deviceId as string) || snap.id,
+        token: (data.token as string) || '',
+        platform: (data.platform as string) || 'web',
+        deviceType: ((data.platform as string) || 'desktop') as 'mobile' | 'desktop' | 'tablet',
+        createdAt: (data.createdAt as string) || '',
+        updatedAt: (data.updatedAt as string) || '',
+        enabled: typeof data.enabled === 'boolean' ? data.enabled : true,
+        categories: (data.categories as PushCategories) || DEFAULT_PUSH_CATEGORIES,
+      }
     }
   } catch {
     // Ignore

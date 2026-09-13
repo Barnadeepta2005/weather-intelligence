@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWeatherData, DEFAULT_COORDINATES } from '@/lib/open-meteo'
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, 'weather', { limit: 60, windowMs: 60_000 })
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
+
   const { searchParams } = new URL(request.url)
   const latStr = searchParams.get('latitude') || searchParams.get('lat')
   const lonStr = searchParams.get('longitude') || searchParams.get('lon')
@@ -38,7 +44,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to retrieve weather data from Open-Meteo'
     return NextResponse.json(
       {

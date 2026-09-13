@@ -2,6 +2,7 @@
 
 import { CloudSun, Navigation, Settings, Loader2, UserRound, LogOut } from 'lucide-react'
 import { MobileInstallButton } from '@/components/PWAProvider'
+import { AtmosWeatherMark } from '@/components/weather-icons/AtmosWeatherMark'
 import type { User } from 'firebase/auth'
 
 interface MobileNavProps {
@@ -26,13 +27,13 @@ export function MobileNav({
   return (
     <nav className="mobile-nav" aria-label="Mobile navigation">
       <div className="mobile-brand">
-        <span className="brand-mark">
-          <CloudSun size={18} />
+        <span className="brand-mark" style={{ padding: '2px' }}>
+          <AtmosWeatherMark size={22} />
         </span>
         <strong>
-          WEATHER
+          ATMOS
           <br />
-          INTELLIGENCE
+          WEATHER
         </strong>
       </div>
       <div className="mobile-nav-actions">

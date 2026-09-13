@@ -152,12 +152,13 @@ export function NotificationModal({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          userId: user.uid,
           subscription: {
             id: deviceId,
+            deviceId,
             token: `token-${deviceId}`,
-            deviceType,
+            platform: deviceType,
             enabled: true,
-            categories,
           },
         }),
       })
@@ -174,7 +175,7 @@ export function NotificationModal({
           type: 'test',
           title: 'PUSH TEST RECEIVED',
           body: 'Push notifications are working correctly on this device.',
-          url: '/',
+          url: '/app',
         })
       } else {
         setFeedback({

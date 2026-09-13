@@ -10,6 +10,7 @@ import type {
   WeatherIconType,
 } from '@/lib/types'
 import type { AlertsResponse } from '@/lib/alerts/types'
+import { drawCanonicalConditionCanvas } from '@/lib/weather-icons/canonical-paths'
 
 interface WeatherSnapshotProps {
   isOpen: boolean
@@ -33,10 +34,10 @@ export function getSnapshotFilename(cityName: string, dateStr?: string): string 
   const date = dateStr
     ? dateStr.replace(/[^0-9-]/g, '')
     : new Date().toISOString().split('T')[0]
-  return `weather-intelligence-${safeCity}-${date}.png`
+  return `atmos-weather-${safeCity}-${date}.png`
 }
 
-/** Helper: draw weather icon onto canvas using crisp vector paths */
+/** Helper: draw weather icon onto canvas using canonical vector mark system */
 function drawWeatherIcon(
   ctx: CanvasRenderingContext2D,
   iconType: WeatherIconType,
@@ -44,139 +45,7 @@ function drawWeatherIcon(
   cy: number,
   size: number
 ) {
-  ctx.save()
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-
-  if (iconType === 'sun') {
-    // Center glowing disc
-    const r = size * 0.28
-    ctx.fillStyle = '#fde047'
-    ctx.strokeStyle = '#000000'
-    ctx.lineWidth = 6
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.stroke()
-
-    // 8 Radiant Rays
-    ctx.lineWidth = 6
-    ctx.strokeStyle = '#000000'
-    for (let i = 0; i < 8; i++) {
-      const angle = (i * Math.PI) / 4
-      const x1 = cx + Math.cos(angle) * (r + 14)
-      const y1 = cy + Math.sin(angle) * (r + 14)
-      const x2 = cx + Math.cos(angle) * (r + 34)
-      const y2 = cy + Math.sin(angle) * (r + 34)
-      ctx.beginPath()
-      ctx.moveTo(x1, y1)
-      ctx.lineTo(x2, y2)
-      ctx.stroke()
-    }
-  } else if (iconType === 'rain') {
-    // Cloud
-    drawCloudShape(ctx, cx, cy - 18, size * 0.9, '#e2e8f0')
-
-    // Rain streaks
-    ctx.strokeStyle = '#3b82f6'
-    ctx.lineWidth = 6
-    const dropOffsets = [-35, -12, 12, 35]
-    dropOffsets.forEach((dx) => {
-      ctx.beginPath()
-      ctx.moveTo(cx + dx, cy + 25)
-      ctx.lineTo(cx + dx - 8, cy + 55)
-      ctx.stroke()
-    })
-  } else if (iconType === 'storm') {
-    // Cloud
-    drawCloudShape(ctx, cx, cy - 22, size * 0.9, '#cbd5e1')
-
-    // Lightning bolt
-    ctx.fillStyle = '#facc15'
-    ctx.strokeStyle = '#000000'
-    ctx.lineWidth = 5
-    ctx.beginPath()
-    ctx.moveTo(cx + 6, cy + 12)
-    ctx.lineTo(cx - 16, cy + 42)
-    ctx.lineTo(cx - 2, cy + 42)
-    ctx.lineTo(cx - 12, cy + 72)
-    ctx.lineTo(cx + 18, cy + 34)
-    ctx.lineTo(cx + 4, cy + 34)
-    ctx.closePath()
-    ctx.fill()
-    ctx.stroke()
-  } else {
-    // Cloud with sun
-    // Sun peeking behind
-    const sunR = size * 0.2
-    const sunX = cx + size * 0.22
-    const sunY = cy - size * 0.22
-    ctx.fillStyle = '#fde047'
-    ctx.strokeStyle = '#000000'
-    ctx.lineWidth = 5
-    ctx.beginPath()
-    ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.stroke()
-
-    for (let i = 0; i < 5; i++) {
-      const angle = (i * Math.PI) / 3 - Math.PI / 4
-      const x1 = sunX + Math.cos(angle) * (sunR + 8)
-      const y1 = sunY + Math.sin(angle) * (sunR + 8)
-      const x2 = sunX + Math.cos(angle) * (sunR + 20)
-      const y2 = sunY + Math.sin(angle) * (sunR + 20)
-      ctx.beginPath()
-      ctx.moveTo(x1, y1)
-      ctx.lineTo(x2, y2)
-      ctx.stroke()
-    }
-
-    // Cloud in front
-    drawCloudShape(ctx, cx - 12, cy + 6, size * 0.85, '#ffffff')
-  }
-
-  ctx.restore()
-}
-
-/** Helper: draw cloud shape */
-function drawCloudShape(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-  fillColor: string
-) {
-  ctx.save()
-  ctx.fillStyle = fillColor
-  ctx.strokeStyle = '#000000'
-  ctx.lineWidth = 6
-
-  const baseW = size * 0.75
-  const baseH = size * 0.38
-  const r1 = size * 0.24
-  const r2 = size * 0.32
-  const r3 = size * 0.2
-
-  ctx.beginPath()
-  // Bottom flat pill
-  ctx.roundRect(x - baseW / 2, y, baseW, baseH, 20)
-  ctx.fill()
-  ctx.stroke()
-
-  // Upper puffs
-  ctx.beginPath()
-  ctx.arc(x - baseW * 0.22, y + 2, r1, 0, Math.PI * 2)
-  ctx.arc(x + baseW * 0.05, y - 10, r2, 0, Math.PI * 2)
-  ctx.arc(x + baseW * 0.28, y + 4, r3, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.stroke()
-
-  // Inner fill to clean overlapping strokes
-  ctx.beginPath()
-  ctx.roundRect(x - baseW / 2 + 3, y + 3, baseW - 6, baseH - 6, 16)
-  ctx.fill()
-
-  ctx.restore()
+  drawCanonicalConditionCanvas(ctx, iconType, cx, cy, size)
 }
 
 /** Helper: wrap and draw text on canvas */
@@ -325,7 +194,7 @@ export function WeatherSnapshot({
 
       ctx.fillStyle = '#000000'
       ctx.font = '900 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      ctx.fillText('WEATHER INTELLIGENCE', pillX + 16, pillY + 23)
+      ctx.fillText('ATMOS WEATHER', pillX + 16, pillY + 23)
 
       // Top Right: Live indicator + local time
       const isLive = data.isLive
@@ -653,7 +522,7 @@ export function WeatherSnapshot({
       // Left Footer: Brand
       ctx.fillStyle = '#000000'
       ctx.font = '900 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      ctx.fillText('WEATHER INTELLIGENCE', 96, 1380)
+      ctx.fillText('ATMOS WEATHER', 96, 1380)
 
       ctx.fillStyle = '#64748b'
       ctx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
@@ -697,9 +566,10 @@ export function WeatherSnapshot({
         })
         setGenerating(false)
       }, 'image/png')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[WeatherSnapshot] Generation error:', err)
-      setGenError(err?.message || 'Error generating snapshot canvas.')
+      const message = err instanceof Error ? err.message : 'Error generating snapshot canvas.'
+      setGenError(message)
       setGenerating(false)
     }
   }, [data, location, alertsData, todayInsight, unit])
@@ -745,7 +615,7 @@ export function WeatherSnapshot({
     const file = new File([pngBlob], filename, { type: 'image/png' })
 
     const shareData = {
-      title: `Weather Intelligence — ${location.name}`,
+      title: `ATMOS WEATHER — ${location.name}`,
       text: `Live weather snapshot for ${location.name}: ${data?.currentConditions.temperature}°${unit}, ${data?.currentConditions.condition}.`,
       files: [file],
     }
@@ -760,8 +630,8 @@ export function WeatherSnapshot({
         await navigator.share(shareData)
         setToastMsg('Snapshot shared successfully!')
         return
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
           // User closed the share sheet
           return
         }

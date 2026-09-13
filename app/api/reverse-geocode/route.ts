@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit'
 
 /**
  * Server-side reverse geocode endpoint.
@@ -7,6 +8,11 @@ import { NextRequest, NextResponse } from 'next/server'
  * ₹0 cost, zero tracking, zero permanent storage of coordinates.
  */
 export async function GET(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, 'reverse-geocode', { limit: 60, windowMs: 60_000 })
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
+
   const { searchParams } = new URL(request.url)
   const latStr = searchParams.get('latitude') || searchParams.get('lat')
   const lonStr = searchParams.get('longitude') || searchParams.get('lon')
@@ -64,7 +70,7 @@ export async function GET(request: NextRequest) {
     const res = await fetch(nomUrl, {
       signal: AbortSignal.timeout(4000),
       headers: {
-        'User-Agent': 'WeatherIntelligenceApp/1.0',
+        'User-Agent': 'AtmosWeatherApp/1.0',
         'Accept': 'application/json',
       },
     })

@@ -49,7 +49,7 @@ export default function GlobalError({
               color: '#5d5a52',
             }}
           >
-            WEATHER INTELLIGENCE / ROOT RECOVERY
+            ATMOS WEATHER / ROOT RECOVERY
           </p>
           <h1
             style={{
