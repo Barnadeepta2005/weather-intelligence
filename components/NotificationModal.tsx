@@ -27,6 +27,7 @@ import {
   getDeviceSubscriptionRecord,
   getOrCreateDeviceId,
   detectDeviceType,
+  triggerForegroundPushNotification,
 } from '@/lib/push/client'
 
 export interface NotificationModalProps {
@@ -165,30 +166,38 @@ export function NotificationModal({
       if (res.ok && data.success) {
         setFeedback({
           type: 'success',
-          message: 'Test alert dispatched! Check your system notifications or app banner.',
+          message: 'Test notification sent.',
         })
 
-        // Also trigger native test notification if supported
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Weather Alert • Test Notification', {
-            body: `Live alert dispatch verified for ${deviceType}. Push delivery is functional.`,
-            icon: '/icon-192x192.png',
-            tag: 'test-notification',
-          })
-        }
+        // Trigger in-app notification banner for foreground message without native Notification constructor
+        triggerForegroundPushNotification({
+          type: 'test',
+          title: 'PUSH TEST RECEIVED',
+          body: 'Push notifications are working correctly on this device.',
+          url: '/',
+        })
       } else {
         setFeedback({
           type: 'error',
-          message: data.error || 'Failed to dispatch test notification.',
+          message: data.error || 'Test notification could not be sent.',
         })
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Network failure'
-      setFeedback({ type: 'error', message: msg })
+    } catch {
+      setFeedback({ type: 'error', message: 'Test notification could not be sent.' })
     } finally {
       setIsTesting(false)
     }
   }, [user, deviceType, categories])
+
+  // Scroll lock background page when modal is active
+  useEffect(() => {
+    if (!isOpen) return
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = originalOverflow
+    }
+  }, [isOpen])
 
   if (!isOpen || !mounted) return null
 
@@ -206,18 +215,16 @@ export function NotificationModal({
         aria-modal="true"
         aria-labelledby="notifications-title"
         onMouseDown={(e) => e.stopPropagation()}
-        style={{ maxWidth: '540px' }}
       >
-        <button
-          type="button"
-          className="settings-close"
-          onClick={onClose}
-          aria-label="Close notifications dialog"
-        >
-          <X size={18} />
-        </button>
-
-        <header className="settings-header">
+        <header className="notification-modal-header">
+          <button
+            type="button"
+            className="settings-close notification-modal-close"
+            onClick={onClose}
+            aria-label="Close notifications dialog"
+          >
+            <X size={18} />
+          </button>
           <span className="settings-badge" style={{ background: 'var(--acid)', color: 'var(--ink)' }}>
             <Bell size={13} />
             <span>COMMUNICATIONS</span>
@@ -228,7 +235,7 @@ export function NotificationModal({
           </p>
         </header>
 
-        <div className="settings-body" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="notification-modal-body">
           {/* Status Row */}
           <div
             style={{

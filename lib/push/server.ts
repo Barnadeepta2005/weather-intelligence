@@ -27,8 +27,11 @@ export async function sendToSubscription(
     }
   }
 
-  // If payload belongs to a specific category, verify user opted in
-  if (payload.data?.category) {
+  // Test notifications are completely independent of category preferences
+  const isTest = payload.type === 'test' || payload.data?.type === 'test'
+
+  // If payload is a real weather notification and belongs to a category, verify user opted in
+  if (!isTest && payload.data?.category) {
     const catKey = payload.data.category as keyof typeof subscription.categories
     if (subscription.categories && subscription.categories[catKey] === false) {
       return {

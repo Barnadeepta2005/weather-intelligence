@@ -165,15 +165,12 @@ export function TrendChart24h({ points, metric, unit }: TrendChart24hProps) {
         >
           <defs>
             <linearGradient id={`areaGrad-${metric}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={accentColor} stopOpacity="0.45" />
-              <stop offset="100%" stopColor={accentColor} stopOpacity="0.03" />
+              <stop offset="0%" stopColor={accentColor} stopOpacity="0.10" />
+              <stop offset="100%" stopColor={accentColor} stopOpacity="0.01" />
             </linearGradient>
-            <filter id="neoShadow" x="-10%" y="-10%" width="130%" height="130%">
-              <feDropShadow dx="3" dy="3" stdDeviation="0" floodColor="#111" />
-            </filter>
           </defs>
 
-          {/* Grid lines (horizontal) */}
+          {/* Sparse, subtle grid lines (horizontal) */}
           {[0, 0.33, 0.66, 1].map((ratio, idx) => {
             const y = padTop + chartH * ratio
             const gridVal = (maxY - ratio * effectiveSpan).toFixed(0)
@@ -184,18 +181,18 @@ export function TrendChart24h({ points, metric, unit }: TrendChart24hProps) {
                   y1={y}
                   x2={width - padRight}
                   y2={y}
-                  stroke="#e2ded4"
-                  strokeWidth="1.5"
-                  strokeDasharray={idx === 3 ? undefined : '3 3'}
+                  stroke="#ece8de"
+                  strokeWidth="1"
+                  strokeDasharray={idx === 3 ? undefined : '2 4'}
                 />
                 <text
                   x={padLeft - 8}
-                  y={y + 3.5}
+                  y={y + 3}
                   textAnchor="end"
-                  fontSize="9"
-                  fontWeight="900"
-                  fill="var(--muted)"
-                  letterSpacing="0.05em"
+                  fontSize="8"
+                  fontWeight="500"
+                  fill="#78716c"
+                  letterSpacing="0.02em"
                 >
                   {gridVal}
                 </text>
@@ -203,16 +200,16 @@ export function TrendChart24h({ points, metric, unit }: TrendChart24hProps) {
             )
           })}
 
-          {/* Area under curve */}
+          {/* Area under curve - very subtle, low opacity tint */}
           {areaPath && <path d={areaPath} fill={`url(#areaGrad-${metric})`} />}
 
-          {/* Thick Neo-Brutalist Stroke Line */}
+          {/* Crisp, clean 2px editorial line */}
           {linePath && (
             <path
               d={linePath}
               fill="none"
               stroke="var(--ink)"
-              strokeWidth="3.5"
+              strokeWidth="2"
               strokeLinejoin="round"
               strokeLinecap="round"
             />
@@ -224,15 +221,15 @@ export function TrendChart24h({ points, metric, unit }: TrendChart24hProps) {
             if (!showLabel) return null
             return (
               <g key={`x-label-${i}`}>
-                <line x1={pt.x} y1={padTop + chartH} x2={pt.x} y2={padTop + chartH + 5} stroke="var(--ink)" strokeWidth="1.5" />
+                <line x1={pt.x} y1={padTop + chartH} x2={pt.x} y2={padTop + chartH + 4} stroke="#d6d3d1" strokeWidth="1" />
                 <text
                   x={pt.x}
-                  y={padTop + chartH + 18}
+                  y={padTop + chartH + 16}
                   textAnchor="middle"
-                  fontSize="9.5"
-                  fontWeight="900"
-                  letterSpacing="0.05em"
-                  fill={pt.isCurrent ? 'var(--ink)' : 'var(--muted)'}
+                  fontSize="8.5"
+                  fontWeight={pt.isCurrent ? '700' : '500'}
+                  letterSpacing="0.03em"
+                  fill={pt.isCurrent ? 'var(--ink)' : '#78716c'}
                 >
                   {pt.isCurrent ? 'NOW' : pt.hourLabel}
                 </text>
@@ -240,62 +237,59 @@ export function TrendChart24h({ points, metric, unit }: TrendChart24hProps) {
             )
           })}
 
-          {/* Data Points */}
+          {/* Data Points: uncluttered, only render distinctive current marker */}
           {coords.map((pt, i) => {
-            const isHigh = maxPoint && maxPoint.index === i
-            const isLow = minPoint && minPoint.index === i
-            const isHovered = hoverIndex === i
+            if (!pt.isCurrent) return null
 
             return (
-              <g key={`point-${i}`}>
-                {/* Current or Hovered point ring */}
-                {(pt.isCurrent || isHovered) && (
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r={pt.isCurrent ? 7.5 : 6}
-                    fill={accentColor}
-                    stroke="var(--ink)"
-                    strokeWidth="2.5"
-                  />
-                )}
+              <g key={`current-point-${i}`}>
                 <circle
                   cx={pt.x}
                   cy={pt.y}
-                  r={pt.isCurrent ? 3.5 : 2.5}
-                  fill={pt.isCurrent ? 'var(--ink)' : 'var(--ink)'}
+                  r="4"
+                  fill="var(--acid)"
+                  stroke="var(--ink)"
+                  strokeWidth="1.5"
+                />
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r="1.5"
+                  fill="var(--ink)"
                 />
               </g>
             )
           })}
 
-          {/* High / Low Badge Markers */}
+          {/* High / Low Badge Markers: compact, light, and elegant */}
           {maxPoint && (
             <g transform={`translate(${maxPoint.x}, ${Math.max(16, maxPoint.y - 12)})`}>
               <rect
-                x="-22"
+                x="-19"
                 y="-13"
-                width="48"
-                height="15"
+                width="38"
+                height="14"
+                rx="2"
                 fill="var(--ink)"
               />
               <rect
-                x="-24"
-                y="-15"
-                width="48"
-                height="15"
+                x="-20"
+                y="-14"
+                width="38"
+                height="14"
+                rx="2"
                 fill="var(--surface)"
                 stroke="var(--ink)"
-                strokeWidth="1.5"
+                strokeWidth="1"
               />
               <text
                 x="0"
                 y="-4"
                 textAnchor="middle"
-                fontSize="8.5"
-                fontWeight="900"
+                fontSize="7.5"
+                fontWeight="700"
                 fill="var(--ink)"
-                letterSpacing="0.04em"
+                letterSpacing="0.02em"
               >
                 H: {maxPoint.val}{maxPoint.unitLabel}
               </text>
@@ -303,38 +297,40 @@ export function TrendChart24h({ points, metric, unit }: TrendChart24hProps) {
           )}
 
           {minPoint && minPoint.index !== maxPoint?.index && (
-            <g transform={`translate(${minPoint.x}, ${Math.min(height - 18, minPoint.y + 22)})`}>
+            <g transform={`translate(${minPoint.x}, ${Math.min(height - 18, minPoint.y + 20)})`}>
               <rect
-                x="-22"
-                y="-10"
-                width="48"
-                height="15"
+                x="-19"
+                y="-11"
+                width="38"
+                height="14"
+                rx="2"
                 fill="var(--ink)"
               />
               <rect
-                x="-24"
+                x="-20"
                 y="-12"
-                width="48"
-                height="15"
+                width="38"
+                height="14"
+                rx="2"
                 fill="var(--surface)"
                 stroke="var(--ink)"
-                strokeWidth="1.5"
+                strokeWidth="1"
               />
               <text
                 x="0"
-                y="-1"
+                y="-2"
                 textAnchor="middle"
-                fontSize="8.5"
-                fontWeight="900"
+                fontSize="7.5"
+                fontWeight="700"
                 fill="var(--ink)"
-                letterSpacing="0.04em"
+                letterSpacing="0.02em"
               >
                 L: {minPoint.val}{minPoint.unitLabel}
               </text>
             </g>
           )}
 
-          {/* Active Hover / Touch Crosshair */}
+          {/* Active Hover / Touch Crosshair: subtle, thin */}
           {activePoint && (
             <g>
               <line
@@ -342,17 +338,17 @@ export function TrendChart24h({ points, metric, unit }: TrendChart24hProps) {
                 y1={padTop}
                 x2={activePoint.x}
                 y2={padTop + chartH}
-                stroke="var(--ink)"
-                strokeWidth="2"
-                strokeDasharray="4 4"
+                stroke="#a8a29e"
+                strokeWidth="1"
+                strokeDasharray="3 3"
               />
               <circle
                 cx={activePoint.x}
                 cy={activePoint.y}
-                r="7"
+                r="4.5"
                 fill={accentColor}
                 stroke="var(--ink)"
-                strokeWidth="2.5"
+                strokeWidth="1.5"
               />
             </g>
           )}

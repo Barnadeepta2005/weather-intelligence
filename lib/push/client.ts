@@ -258,23 +258,54 @@ export async function getDeviceSubscriptionRecord(
 }
 
 /**
+ * Trigger an in-app foreground push notification toast.
+ */
+export function triggerForegroundPushNotification(payload: PushNotificationPayload) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent('wi-foreground-push', { detail: payload }))
+}
+
+/**
  * Listen for push messages arriving while the application is in the foreground.
  */
 export function setupForegroundPushListener(
   callback: (payload: PushNotificationPayload) => void
 ): () => void {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+  if (typeof window === 'undefined') {
     return () => {}
   }
 
   // Handler for messages forwarded from service worker
   const swHandler = (event: MessageEvent) => {
     if (event.data && event.data.type === 'PUSH_NOTIFICATION_RECEIVED') {
-      callback(event.data.payload)
+      const p = event.data.payload || {}
+      const isTest = p.data?.type === 'test' || p.type === 'test' || (p.title && p.title.toLowerCase().includes('test'))
+      callback({
+        title: isTest ? 'PUSH TEST RECEIVED' : p.title || 'Weather Alert',
+        body: p.body || 'Push notifications are working correctly on this device.',
+        data: p.data,
+      })
     }
   }
 
-  navigator.serviceWorker.addEventListener('message', swHandler)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', swHandler)
+  }
+
+  // Handler for custom in-app foreground notification events
+  const customHandler = (e: Event) => {
+    const customEvent = e as CustomEvent<PushNotificationPayload>
+    if (customEvent.detail) {
+      const p = customEvent.detail
+      const isTest = p.data?.type === 'test' || p.type === 'test' || (p.title && p.title.toLowerCase().includes('test'))
+      callback({
+        title: isTest ? 'PUSH TEST RECEIVED' : p.title || 'Weather Alert',
+        body: p.body || 'Push notifications are working correctly on this device.',
+        data: p.data,
+      })
+    }
+  }
+  window.addEventListener('wi-foreground-push', customHandler)
 
   // Also setup Firebase onMessage if messaging is active
   let unsubscribeFcm: (() => void) | null = null
@@ -285,8 +316,9 @@ export function setupForegroundPushListener(
           const app = getApp()
           const messaging = getMessaging(app)
           unsubscribeFcm = onMessage(messaging, (payload) => {
-            const title = payload.notification?.title || payload.data?.title || 'Weather Alert'
-            const body = payload.notification?.body || payload.data?.body || ''
+            const isTest = payload.data?.type === 'test' || (payload.notification?.title && payload.notification.title.toLowerCase().includes('test'))
+            const title = isTest ? 'PUSH TEST RECEIVED' : payload.notification?.title || payload.data?.title || 'Weather Alert'
+            const body = payload.notification?.body || payload.data?.body || 'Push notifications are working correctly on this device.'
             callback({ title, body, data: payload.data })
           })
         } catch {
@@ -297,7 +329,10 @@ export function setupForegroundPushListener(
     .catch(() => {})
 
   return () => {
-    navigator.serviceWorker.removeEventListener('message', swHandler)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.removeEventListener('message', swHandler)
+    }
+    window.removeEventListener('wi-foreground-push', customHandler)
     if (unsubscribeFcm) unsubscribeFcm()
   }
 }

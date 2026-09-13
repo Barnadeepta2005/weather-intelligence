@@ -2319,30 +2319,30 @@
 
 .trend-tooltip {
   position: absolute;
-  top: 10px;
+  top: 8px;
   transform: translateX(-50%);
   z-index: 10;
   pointer-events: none;
   background: var(--ink);
   color: var(--surface);
-  border: 1.5px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--surface);
-  padding: 4px 8px;
+  border: 1px solid var(--ink);
+  box-shadow: 1.5px 1.5px 0 var(--surface);
+  padding: 3px 6px;
   white-space: nowrap;
   transition: left 0.06s ease;
 }
 
 .trend-tooltip-badge {
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   color: var(--acid);
   text-transform: uppercase;
 }
 
 .trend-tooltip-val {
-  font-size: 11px;
-  font-weight: 900;
+  font-size: 10px;
+  font-weight: 800;
   display: block;
 }
 
@@ -3105,11 +3105,12 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 1000;
-  max-width: 400px;
+  z-index: 3000;
+  max-width: 420px;
   width: calc(100% - 40px);
   padding: 14px 18px;
   background: var(--acid);
+  color: var(--ink);
   border: 3px solid var(--ink);
   box-shadow: 5px 5px 0 var(--ink);
   display: flex;
@@ -3126,6 +3127,218 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   PHASE 6 FINAL PASS: LOCATION STRIP ALIGNMENT & MODAL SCROLL FIXES
+   ========================================================================== */
+
+/* Refined Location Strip Layout & Alignment */
+.location-strip {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+  margin-top: 10px !important;
+  margin-bottom: 6px !important;
+  flex-wrap: wrap !important;
+}
+
+.location-strip-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.location-primary-row {
+  display: flex;
+  align-items: center;
+  gap: 36px; /* distance between icon cluster and text: ~32-48px */
+  min-width: 0;
+}
+
+.location-control-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px; /* distance between status dot and pin: ~16-24px */
+  flex-shrink: 0;
+}
+
+.location-control-cluster .live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--ink);
+  flex-shrink: 0;
+  display: block;
+}
+
+.location-control-cluster .location-pin-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  display: block;
+  color: var(--ink);
+}
+
+.location-name-text {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1.25;
+  display: inline-block;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.location-secondary-row {
+  display: flex;
+  align-items: center;
+  padding-left: 0;
+}
+
+.location-secondary-row .updated {
+  color: var(--muted) !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.location-strip-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .location-strip {
+    gap: 10px !important;
+    margin-top: 14px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .location-primary-row {
+    gap: 14px;
+  }
+
+  .location-control-cluster {
+    gap: 10px;
+  }
+
+  .location-name-text {
+    font-size: 11.5px;
+  }
+
+  .location-secondary-row .updated {
+    font-size: 8.5px !important;
+  }
+
+  .location-strip-actions {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 2px;
+    justify-content: flex-start;
+  }
+}
+
+/* Viewport-Aware Notification Modal Height & Scroll Architecture */
+.notification-modal-dialog {
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(540px, 100%) !important;
+  max-height: calc(100vh - 32px) !important;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  position: relative;
+  background: var(--surface);
+  border: 3px solid var(--ink);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+
+.notification-modal-header {
+  position: relative;
+  flex-shrink: 0;
+  padding: 22px 24px 14px;
+  border-bottom: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+.notification-modal-header h2 {
+  margin: 6px 0 4px;
+  font-size: 26px;
+  letter-spacing: -0.04em;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.notification-modal-close {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--ink);
+  z-index: 5;
+  transition: transform 0.1s, background-color 0.1s;
+}
+
+.notification-modal-close:hover {
+  background: var(--acid);
+  transform: translate(-1px, -1px);
+}
+
+.notification-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 18px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .notification-modal-dialog {
+    width: calc(100% - 16px) !important;
+    max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .notification-modal-header {
+    padding: 16px 16px 12px;
+  }
+
+  .notification-modal-header h2 {
+    font-size: 22px;
+  }
+
+  .notification-modal-close {
+    width: 32px;
+    height: 32px;
+    right: 12px;
+    top: 12px;
+  }
+
+  .notification-modal-body {
+    padding: 14px 16px 20px;
+    gap: 14px;
   }
 }
 

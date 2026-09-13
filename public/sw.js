@@ -156,11 +156,21 @@ self.addEventListener('push', (event) => {
 
   const notification = payload.notification || {};
   const data = payload.data || {};
-  const title = notification.title || data.title || 'Weather Alert';
-  const body = notification.body || data.body || 'New atmospheric intelligence update available.';
+  const isTest = payload.type === 'test' || data.type === 'test';
+
+  const title = isTest
+    ? (notification.title || data.title || payload.title || 'Weather Intelligence — Test')
+    : (notification.title || data.title || 'Weather Alert');
+
+  const body = isTest
+    ? (notification.body || data.body || payload.body || 'Push notifications are working correctly on this device.')
+    : (notification.body || data.body || 'New atmospheric intelligence update available.');
+
   const icon = notification.icon || data.icon || '/icon-192x192.png';
   const badge = notification.badge || data.badge || '/icon-192x192.png';
-  const tag = notification.tag || data.tag || 'weather-intelligence-alert';
+  const tag = isTest
+    ? 'weather-intelligence-test'
+    : (notification.tag || data.tag || 'weather-intelligence-alert');
 
   const notificationOptions = {
     body,
@@ -169,23 +179,35 @@ self.addEventListener('push', (event) => {
     tag,
     renotify: true,
     data: {
-      url: data.url || '/',
+      url: data.url || payload.url || '/',
+      type: isTest ? 'test' : 'alert',
       timestamp: Date.now(),
       ...data,
     },
   };
 
   event.waitUntil(
-    self.registration.showNotification(title, notificationOptions).then(() => {
-      // Notify active open clients in foreground
-      return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-        clients.forEach((client) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      const hasVisibleClient = clientList.some((client) => client.visibilityState === 'visible');
+
+      if (hasVisibleClient) {
+        // App is in foreground: forward to clients for in-app toast only.
+        // Do NOT trigger system OS notification.
+        clientList.forEach((client) => {
           client.postMessage({
             type: 'PUSH_NOTIFICATION_RECEIVED',
-            payload: { title, body, data: notificationOptions.data },
+            payload: {
+              title: isTest ? 'PUSH TEST RECEIVED' : title,
+              body,
+              data: notificationOptions.data,
+            },
           });
         });
-      });
+        return Promise.resolve();
+      }
+
+      // App is backgrounded: display system OS notification
+      return self.registration.showNotification(title, notificationOptions);
     })
   );
 });

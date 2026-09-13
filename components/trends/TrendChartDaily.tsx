@@ -79,7 +79,12 @@ export function TrendChartDaily({ points, metric, unit }: TrendChartDailyProps) 
 
   const total = dataSeries.length
   const colWidth = total > 0 ? chartW / total : 40
-  const barWidth = Math.min(36, Math.max(12, colWidth * 0.55))
+  const barWidth = useMemo(() => {
+    if (total <= 7) return Math.min(16, Math.max(10, colWidth * 0.18))
+    if (total <= 14) return Math.min(12, Math.max(7, colWidth * 0.24))
+    return Math.min(8, Math.max(4, colWidth * 0.32))
+  }, [total, colWidth])
+  const barRadius = Math.min(4, Math.max(2, barWidth / 2))
 
   // Pointer interaction
   const handlePointer = useCallback(
@@ -135,7 +140,7 @@ export function TrendChartDaily({ points, metric, unit }: TrendChartDailyProps) 
           role="img"
           aria-label={`Historical ${metric} chart`}
         >
-          {/* Background grid lines */}
+          {/* Sparse, subtle background grid lines */}
           {[0, 0.33, 0.66, 1].map((ratio, idx) => {
             const y = padTop + chartH * ratio
             const val = (maxY - ratio * effectiveSpan).toFixed(0)
@@ -146,18 +151,18 @@ export function TrendChartDaily({ points, metric, unit }: TrendChartDailyProps) 
                   y1={y}
                   x2={width - padRight}
                   y2={y}
-                  stroke="#e2ded4"
-                  strokeWidth="1.5"
-                  strokeDasharray={idx === 3 ? undefined : '3 3'}
+                  stroke="#ece8de"
+                  strokeWidth="1"
+                  strokeDasharray={idx === 3 ? undefined : '2 4'}
                 />
                 <text
                   x={padLeft - 8}
-                  y={y + 3.5}
+                  y={y + 3}
                   textAnchor="end"
-                  fontSize="9"
-                  fontWeight="900"
-                  fill="var(--muted)"
-                  letterSpacing="0.05em"
+                  fontSize="8"
+                  fontWeight="500"
+                  fill="#78716c"
+                  letterSpacing="0.02em"
                 >
                   {val}
                 </text>
@@ -186,36 +191,40 @@ export function TrendChartDaily({ points, metric, unit }: TrendChartDailyProps) 
                       y={padTop}
                       width={colWidth}
                       height={chartH}
-                      fill="rgba(201, 255, 74, 0.18)"
+                      fill="rgba(201, 255, 74, 0.14)"
                     />
                   )}
 
-                  {/* Range Bar with hard shadow */}
+                  {/* Refined range bar with subtle 1.5px shadow */}
                   <rect
-                    x={xLeft + 2.5}
-                    y={yHigh + 2.5}
+                    x={xLeft + 1.5}
+                    y={yHigh + 1.5}
                     width={barWidth}
                     height={rangeHeight}
+                    rx={barRadius}
+                    ry={barRadius}
                     fill="var(--ink)"
-                    opacity="0.3"
+                    opacity="0.18"
                   />
                   <rect
                     x={xLeft}
                     y={yHigh}
                     width={barWidth}
                     height={rangeHeight}
+                    rx={barRadius}
+                    ry={barRadius}
                     fill={d.isToday ? 'var(--acid)' : 'var(--blue)'}
                     stroke="var(--ink)"
-                    strokeWidth="2"
+                    strokeWidth="1.25"
                   />
 
                   {/* High Value Text */}
                   <text
                     x={xCenter}
-                    y={yHigh - 7}
+                    y={yHigh - 5}
                     textAnchor="middle"
-                    fontSize={total > 15 ? '7.5' : '9'}
-                    fontWeight="900"
+                    fontSize={total > 15 ? '7' : '8'}
+                    fontWeight="700"
                     fill="var(--ink)"
                   >
                     {d.high}°
@@ -224,29 +233,29 @@ export function TrendChartDaily({ points, metric, unit }: TrendChartDailyProps) 
                   {/* Low Value Text */}
                   <text
                     x={xCenter}
-                    y={yLow + 14}
+                    y={yLow + 12}
                     textAnchor="middle"
-                    fontSize={total > 15 ? '7.5' : '9'}
-                    fontWeight="700"
-                    fill="var(--muted)"
+                    fontSize={total > 15 ? '7' : '8'}
+                    fontWeight="500"
+                    fill="#78716c"
                   >
                     {d.low}°
                   </text>
 
                   {/* Today indicator mark */}
                   {d.isToday && (
-                    <circle cx={xCenter} cy={padTop + chartH + 10} r="3" fill="var(--ink)" />
+                    <circle cx={xCenter} cy={padTop + chartH + 8} r="2.5" fill="var(--ink)" />
                   )}
 
                   {/* X Axis Date Label */}
                   <text
                     x={xCenter}
-                    y={padTop + chartH + 26}
+                    y={padTop + chartH + 22}
                     textAnchor="middle"
-                    fontSize={total > 15 ? '7.5' : '9'}
-                    fontWeight="900"
-                    fill={d.isToday ? 'var(--ink)' : 'var(--muted)'}
-                    letterSpacing="0.04em"
+                    fontSize={total > 15 ? '7' : '8.5'}
+                    fontWeight={d.isToday ? '800' : '500'}
+                    fill={d.isToday ? 'var(--ink)' : '#78716c'}
+                    letterSpacing="0.03em"
                   >
                     {d.isToday ? 'TODAY' : d.dayLabel}
                   </text>
@@ -266,19 +275,21 @@ export function TrendChartDaily({ points, metric, unit }: TrendChartDailyProps) 
                     y={padTop}
                     width={colWidth}
                     height={chartH}
-                    fill="rgba(201, 255, 74, 0.18)"
+                    fill="rgba(201, 255, 74, 0.14)"
                   />
                 )}
 
-                {/* Hard offset shadow */}
+                {/* Subtle offset shadow */}
                 {barHeight > 3 && (
                   <rect
-                    x={xLeft + 2.5}
-                    y={yTop + 2.5}
+                    x={xLeft + 1.5}
+                    y={yTop + 1.5}
                     width={barWidth}
                     height={barHeight}
+                    rx={barRadius}
+                    ry={barRadius}
                     fill="var(--ink)"
-                    opacity="0.3"
+                    opacity="0.18"
                   />
                 )}
 
@@ -288,19 +299,21 @@ export function TrendChartDaily({ points, metric, unit }: TrendChartDailyProps) 
                   y={yTop}
                   width={barWidth}
                   height={barHeight}
+                  rx={barRadius}
+                  ry={barRadius}
                   fill={d.isToday ? 'var(--acid)' : barFillColor}
                   stroke="var(--ink)"
-                  strokeWidth="2"
+                  strokeWidth="1.25"
                 />
 
                 {/* Value on top of bar (if total <= 14) */}
                 {total <= 14 && d.singleVal > 0 && (
                   <text
                     x={xCenter}
-                    y={yTop - 6}
+                    y={yTop - 5}
                     textAnchor="middle"
-                    fontSize="8.5"
-                    fontWeight="900"
+                    fontSize="7.5"
+                    fontWeight="600"
                     fill="var(--ink)"
                   >
                     {d.singleVal}
@@ -310,12 +323,12 @@ export function TrendChartDaily({ points, metric, unit }: TrendChartDailyProps) 
                 {/* Date label */}
                 <text
                   x={xCenter}
-                  y={padTop + chartH + 24}
+                  y={padTop + chartH + 22}
                   textAnchor="middle"
-                  fontSize={total > 15 ? '7.5' : '9'}
-                  fontWeight="900"
-                  fill={d.isToday ? 'var(--ink)' : 'var(--muted)'}
-                  letterSpacing="0.04em"
+                  fontSize={total > 15 ? '7' : '8.5'}
+                  fontWeight={d.isToday ? '800' : '500'}
+                  fill={d.isToday ? 'var(--ink)' : '#78716c'}
+                  letterSpacing="0.03em"
                 >
                   {d.isToday ? 'TODAY' : d.dayLabel}
                 </text>

@@ -38,15 +38,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 3. Construct Deterministic Test Weather Notification
+    // 3. Construct Dedicated Test Notification (type="test")
     const testPayload: PushNotificationPayload = {
-      title: 'Weather Alert • Test Notification',
-      body: `Live alert dispatch verified for ${subscription.deviceType || 'device'}. Push delivery is functional.`,
+      type: 'test',
+      title: 'Weather Intelligence — Test',
+      body: 'Push notifications are working correctly on this device.',
       icon: '/icon-192x192.png',
       badge: '/icon-192x192.png',
-      tag: 'test-weather-alert',
+      tag: 'weather-intelligence-test',
       data: {
-        category: 'severeAlerts',
+        type: 'test',
         url: '/',
         timestamp: Date.now(),
       },

@@ -31,12 +31,15 @@ export interface PushSubscriptionRecord {
 }
 
 export interface PushNotificationPayload {
+  type?: 'test' | 'alert' | 'briefing'
   title: string
   body: string
   icon?: string
   badge?: string
   tag?: string
+  url?: string
   data?: {
+    type?: string
     url?: string
     category?: keyof PushCategories
     timestamp?: number

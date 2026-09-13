@@ -42,15 +42,31 @@ export function LocationStrip({
 
   return (
     <div className="location-strip">
-      <span className="live-dot" style={{ backgroundColor: isLive ? '#22c55e' : '#eab308' }} />
-      <MapPin size={14} />
-      <strong>
-        {location.city}
-        {adminSuffix}, {location.country}
-      </strong>
-      <span className="updated">
-        LOCAL TIME {location.localTime} / {isLive ? `UPDATED ${location.lastUpdated}` : 'DEMO MODE (OFFLINE)'}
-      </span>
+      <div className="location-strip-main">
+        {/* Primary Row: [Status Dot] ~16-24px [Pin] ~32-48px [Location Text] */}
+        <div className="location-primary-row">
+          <div className="location-control-cluster">
+            <span
+              className="live-dot"
+              style={{ backgroundColor: isLive ? '#22c55e' : '#eab308' }}
+              aria-label={isLive ? 'Live data feed' : 'Demo data feed'}
+            />
+            <MapPin size={15} className="location-pin-icon" aria-hidden="true" />
+          </div>
+          <strong className="location-name-text">
+            {location.city}
+            {adminSuffix}, {location.country}
+          </strong>
+        </div>
+
+        {/* Secondary Time Row: visually subordinate, anchored below */}
+        <div className="location-secondary-row">
+          <span className="updated">
+            LOCAL TIME {location.localTime} / {isLive ? `UPDATED ${location.lastUpdated}` : 'DEMO MODE (OFFLINE)'}
+          </span>
+        </div>
+      </div>
+
       <div className="location-strip-actions">
         {onOpenShare && (
           <button
