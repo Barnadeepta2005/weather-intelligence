@@ -96,7 +96,7 @@ const FEATURED_CITIES: OtherCityConfig[] = [
 /**
  * Fetch with timeout to guarantee responsiveness.
  */
-async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
+export async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
   try {

@@ -902,6 +902,7 @@ export default function Page() {
               onSelectLocation={handleSelectLocation}
               onOpenAuth={handleOpenAuth}
               savedState={savedState}
+              unit={unit}
             />
             {alertsData?.hasActiveAlerts && alertsData.alerts.length > 0 && (
               <AlertBanner alerts={alertsData.alerts} />

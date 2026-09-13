@@ -66,6 +66,32 @@ export type ForecastSelection =
   | { type: 'day'; index: number }
   | null
 
+/** Live weather summary for a saved location card (Phase 3D) */
+export interface SavedLocationWeather {
+  locationId: string
+  name: string
+  country: string
+  admin1?: string
+  latitude: number
+  longitude: number
+
+  temperature: number
+  feelsLike?: number
+  condition: string
+  icon: WeatherIconType
+
+  high?: number
+  low?: number
+
+  aqi?: number | null
+  aqiStandard?: 'CPCB' | 'US' | 'EUROPEAN'
+  aqiSourceType?: 'GROUND_STATION' | 'ATMOSPHERIC_MODEL'
+  aqiSourceName?: string
+
+  updatedAt: string
+  error?: boolean
+}
+
 /** A saved/other city card */
 export interface CityWeather {
   city: string
