@@ -22,6 +22,7 @@ import { SettingsModal } from '@/components/SettingsModal'
 import { AlertBanner } from '@/components/AlertBanner'
 import { ForecastDetailModal, type ForecastDetailItem } from '@/components/ForecastDetailModal'
 import { WeatherSnapshot } from '@/components/WeatherSnapshot'
+import { WeatherTrends } from '@/components/trends/WeatherTrends'
 import { useSavedLocations } from '@/lib/useSavedLocations'
 import type { AlertsResponse } from '@/lib/alerts/types'
 import { generateTodayInsight } from '@/lib/insights'
@@ -933,6 +934,13 @@ export default function Page() {
               <WeeklyForecast
                 entries={activeData.weekly}
                 onSelectDay={handleSelectDay}
+              />
+              <WeatherTrends
+                latitude={location.latitude}
+                longitude={location.longitude}
+                cityName={location.name}
+                timezone={location.timezone}
+                unit={unit}
               />
               <OtherCities
                 cities={activeData.otherCities}
