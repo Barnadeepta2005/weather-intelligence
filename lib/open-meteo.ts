@@ -34,6 +34,8 @@ import {
   formatTime12h,
   formatLocalTime,
   celsiusToFahrenheit,
+  formatFullDate,
+  formatFullDateTime,
 } from './weather-utils'
 import { getAirQuality } from './air-quality/service'
 import { generateTodayInsight } from './insights'
@@ -44,6 +46,7 @@ export interface RawCelsiusValues {
   high: number
   low: number
   hourly: number[]
+  hourlyFeelsLike?: number[]
   weeklyHighs: number[]
   weeklyLows: number[]
   otherCities: number[]
@@ -120,8 +123,8 @@ export async function getWeatherData(
   const forecastUrl =
     `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
     `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,visibility,uv_index` +
-    `&hourly=temperature_2m,precipitation_probability,weather_code,uv_index` +
-    `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max` +
+    `&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,rain,snowfall,weather_code,surface_pressure,relative_humidity_2m,wind_speed_10m,wind_direction_10m,visibility,uv_index,cloud_cover` +
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max,precipitation_sum,rain_sum,snowfall_sum,wind_speed_10m_max,wind_direction_10m_dominant` +
     `&timezone=${encodeURIComponent(timezone || 'auto')}&forecast_days=7`
 
   // 4 other cities distinct from the current city (prevents duplicate cities)
@@ -255,11 +258,22 @@ export async function getWeatherData(
     timestamp: current.time,
   }
 
-  // 4. Hourly Forecast (Next 10 hours from current hour)
+  // 4. Hourly Forecast (Next 12 hours from current hour)
   const hourlyTimes: string[] = Array.isArray(hourly?.time) ? hourly.time : []
   const hourlyTemps: number[] = Array.isArray(hourly?.temperature_2m) ? hourly.temperature_2m : []
+  const hourlyFeels: number[] = Array.isArray(hourly?.apparent_temperature) ? hourly.apparent_temperature : []
   const hourlyProbs: number[] = Array.isArray(hourly?.precipitation_probability) ? hourly.precipitation_probability : []
+  const hourlyPrecip: number[] = Array.isArray(hourly?.precipitation) ? hourly.precipitation : []
+  const hourlyRain: number[] = Array.isArray(hourly?.rain) ? hourly.rain : []
+  const hourlySnow: number[] = Array.isArray(hourly?.snowfall) ? hourly.snowfall : []
   const hourlyCodes: number[] = Array.isArray(hourly?.weather_code) ? hourly.weather_code : []
+  const hourlyPressure: number[] = Array.isArray(hourly?.surface_pressure) ? hourly.surface_pressure : []
+  const hourlyHumidity: number[] = Array.isArray(hourly?.relative_humidity_2m) ? hourly.relative_humidity_2m : []
+  const hourlyWindSpeed: number[] = Array.isArray(hourly?.wind_speed_10m) ? hourly.wind_speed_10m : []
+  const hourlyWindDir: number[] = Array.isArray(hourly?.wind_direction_10m) ? hourly.wind_direction_10m : []
+  const hourlyVisibility: number[] = Array.isArray(hourly?.visibility) ? hourly.visibility : []
+  const hourlyUv: number[] = Array.isArray(hourly?.uv_index) ? hourly.uv_index : []
+  const hourlyClouds: number[] = Array.isArray(hourly?.cloud_cover) ? hourly.cloud_cover : []
 
   let startIndex = 0
   if (current.time && hourlyTimes.length > 0) {
@@ -272,21 +286,68 @@ export async function getWeatherData(
 
   const hourlyEntries: HourlyEntry[] = []
   const rawHourlyTemps: number[] = []
-  const hoursToTake = Math.min(10, Math.max(0, hourlyTimes.length - startIndex))
+  const rawHourlyFeels: number[] = []
+  const hoursToTake = Math.min(12, Math.max(0, hourlyTimes.length - startIndex))
 
   for (let i = 0; i < hoursToTake; i++) {
     const idx = startIndex + i
     const hTime = hourlyTimes[idx] || ''
     const hTemp = typeof hourlyTemps[idx] === 'number' ? Math.round(hourlyTemps[idx]) : tempC
+    const hFeel = typeof hourlyFeels[idx] === 'number' ? Math.round(hourlyFeels[idx]) : hTemp
     const hProb = typeof hourlyProbs[idx] === 'number' ? Math.round(hourlyProbs[idx]) : 0
     const hCode = typeof hourlyCodes[idx] === 'number' ? hourlyCodes[idx] : 0
+    const mapped = mapWeatherCode(hCode)
+
+    const hPrecip = typeof hourlyPrecip[idx] === 'number' ? Number(hourlyPrecip[idx].toFixed(1)) : 0
+    const hR = typeof hourlyRain[idx] === 'number' ? Number(hourlyRain[idx].toFixed(1)) : 0
+    const hSn = typeof hourlySnow[idx] === 'number' ? Number(hourlySnow[idx].toFixed(1)) : 0
+    const hPress = typeof hourlyPressure[idx] === 'number' ? Math.round(hourlyPressure[idx]) : undefined
+    const hHum = typeof hourlyHumidity[idx] === 'number' ? Math.round(hourlyHumidity[idx]) : undefined
+    const hWind = typeof hourlyWindSpeed[idx] === 'number' ? Math.round(hourlyWindSpeed[idx]) : undefined
+    const hWindDir = typeof hourlyWindDir[idx] === 'number' ? degreesToCompass(hourlyWindDir[idx]) : undefined
+    const hVis = typeof hourlyVisibility[idx] === 'number' ? Number((hourlyVisibility[idx] / 1000).toFixed(1)) : undefined
+    const hUvIdx = typeof hourlyUv[idx] === 'number' ? Number(hourlyUv[idx].toFixed(1)) : 0
+    const hCloud = typeof hourlyClouds[idx] === 'number' ? Math.round(hourlyClouds[idx]) : undefined
+
+    // Find daily sunrise/sunset for this hour
+    const datePrefix = hTime.substring(0, 10)
+    const dailyMatchIdx = Array.isArray(daily?.time) ? daily.time.findIndex((t: string) => t === datePrefix) : 0
+    const dSunriseStr = daily?.sunrise?.[dailyMatchIdx >= 0 ? dailyMatchIdx : 0]
+      ? formatTime12h(daily.sunrise[dailyMatchIdx >= 0 ? dailyMatchIdx : 0])
+      : undefined
+    const dSunsetStr = daily?.sunset?.[dailyMatchIdx >= 0 ? dailyMatchIdx : 0]
+      ? formatTime12h(daily.sunset[dailyMatchIdx >= 0 ? dailyMatchIdx : 0])
+      : undefined
+
     rawHourlyTemps.push(hTemp)
+    rawHourlyFeels.push(hFeel)
 
     hourlyEntries.push({
       time: hTime ? formatHour(hTime) : `${i}:00`,
       temperature: `${hTemp}°`,
       rainProbability: `${hProb}%`,
-      iconType: mapWeatherCode(hCode).icon,
+      iconType: mapped.icon,
+      condition: mapped.condition,
+      fullTime: hTime ? formatFullDateTime(hTime) : undefined,
+      date: hTime ? formatDate(hTime) : undefined,
+      feelsLike: `${hFeel}°`,
+      precipitation: `${hPrecip} mm`,
+      rain: `${hR} mm`,
+      snowfall: `${hSn} cm`,
+      cloudCover: hCloud != null ? `${hCloud}%` : undefined,
+      humidity: hHum != null ? `${hHum}%` : undefined,
+      windSpeed: hWind != null ? `${hWind} km/h` : undefined,
+      windDirection: hWindDir,
+      pressure: hPress != null ? `${hPress} hPa` : undefined,
+      visibility: hVis != null ? `${hVis} km` : undefined,
+      uvIndex: hUvIdx,
+      uvLevel: classifyUV(Math.round(hUvIdx)).level,
+      sunrise: dSunriseStr,
+      sunset: dSunsetStr,
+      rawC: {
+        temp: hTemp,
+        feelsLike: hFeel,
+      },
     })
   }
 
@@ -296,6 +357,12 @@ export async function getWeatherData(
   const dailyMins: number[] = Array.isArray(daily?.temperature_2m_min) ? daily.temperature_2m_min : []
   const dailyProbs: number[] = Array.isArray(daily?.precipitation_probability_max) ? daily.precipitation_probability_max : []
   const dailyCodes: number[] = Array.isArray(daily?.weather_code) ? daily.weather_code : []
+  const dailyPrecipSums: number[] = Array.isArray(daily?.precipitation_sum) ? daily.precipitation_sum : []
+  const dailyRainSums: number[] = Array.isArray(daily?.rain_sum) ? daily.rain_sum : []
+  const dailySnowSums: number[] = Array.isArray(daily?.snowfall_sum) ? daily.snowfall_sum : []
+  const dailyWindMaxs: number[] = Array.isArray(daily?.wind_speed_10m_max) ? daily.wind_speed_10m_max : []
+  const dailyWindDirs: number[] = Array.isArray(daily?.wind_direction_10m_dominant) ? daily.wind_direction_10m_dominant : []
+  const dailyUvs: number[] = Array.isArray(daily?.uv_index_max) ? daily.uv_index_max : []
 
   const weeklyEntries: DailyEntry[] = []
   const rawWeeklyHighs: number[] = []
@@ -308,6 +375,16 @@ export async function getWeatherData(
     const dMin = typeof dailyMins[i] === 'number' ? Math.round(dailyMins[i]) : tempC - 5
     const dProb = typeof dailyProbs[i] === 'number' ? Math.round(dailyProbs[i]) : 0
     const dCode = typeof dailyCodes[i] === 'number' ? dailyCodes[i] : 0
+    const mapped = mapWeatherCode(dCode)
+
+    const dPrecipSum = typeof dailyPrecipSums[i] === 'number' ? Number(dailyPrecipSums[i].toFixed(1)) : 0
+    const dRainSum = typeof dailyRainSums[i] === 'number' ? Number(dailyRainSums[i].toFixed(1)) : 0
+    const dSnowSum = typeof dailySnowSums[i] === 'number' ? Number(dailySnowSums[i].toFixed(1)) : 0
+    const dWindMax = typeof dailyWindMaxs[i] === 'number' ? Math.round(dailyWindMaxs[i]) : undefined
+    const dWindDir = typeof dailyWindDirs[i] === 'number' ? degreesToCompass(dailyWindDirs[i]) : undefined
+    const dUvMax = typeof dailyUvs[i] === 'number' ? Number(dailyUvs[i].toFixed(1)) : undefined
+    const dSunrise = daily?.sunrise?.[i] ? formatTime12h(daily.sunrise[i]) : undefined
+    const dSunset = daily?.sunset?.[i] ? formatTime12h(daily.sunset[i]) : undefined
 
     rawWeeklyHighs.push(dMax)
     rawWeeklyLows.push(dMin)
@@ -317,7 +394,23 @@ export async function getWeatherData(
       high: `${dMax}°`,
       low: `${dMin}°`,
       rainProbability: `${dProb}%`,
-      iconType: mapWeatherCode(dCode).icon,
+      iconType: mapped.icon,
+      condition: mapped.condition,
+      fullDate: dTime ? formatFullDate(dTime) : undefined,
+      date: dTime ? formatDate(dTime) : undefined,
+      precipitationSum: `${dPrecipSum} mm`,
+      rainSum: `${dRainSum} mm`,
+      snowfallSum: `${dSnowSum} cm`,
+      windSpeedMax: dWindMax != null ? `${dWindMax} km/h` : undefined,
+      windDirectionDominant: dWindDir,
+      uvIndexMax: dUvMax,
+      uvLevel: dUvMax != null ? classifyUV(Math.round(dUvMax)).level : undefined,
+      sunrise: dSunrise,
+      sunset: dSunset,
+      rawC: {
+        high: dMax,
+        low: dMin,
+      },
     })
   }
 
@@ -397,6 +490,7 @@ export async function getWeatherData(
       high: highC,
       low: lowC,
       hourly: rawHourlyTemps,
+      hourlyFeelsLike: rawHourlyFeels,
       weeklyHighs: rawWeeklyHighs,
       weeklyLows: rawWeeklyLows,
       otherCities: rawOtherCitiesTemps,
@@ -428,9 +522,11 @@ export function applyTemperatureUnit(
 
   const hourly: HourlyEntry[] = data.hourly.map((entry, idx) => {
     const rawC = rawCelsiuses.hourly[idx] ?? parseInt(entry.temperature, 10)
+    const rawFeels = rawCelsiuses.hourlyFeelsLike?.[idx] ?? (entry.rawC?.feelsLike ?? rawC)
     return {
       ...entry,
       temperature: `${celsiusToFahrenheit(rawC)}°`,
+      feelsLike: entry.feelsLike ? `${celsiusToFahrenheit(rawFeels)}°` : undefined,
     }
   })
 

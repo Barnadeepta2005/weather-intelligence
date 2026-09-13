@@ -20,6 +20,7 @@ import { AuthControl } from '@/components/AuthControl'
 import { SavedLocations } from '@/components/SavedLocations'
 import { SettingsModal } from '@/components/SettingsModal'
 import { AlertBanner } from '@/components/AlertBanner'
+import { ForecastDetailModal, type ForecastDetailItem } from '@/components/ForecastDetailModal'
 import { useSavedLocations } from '@/lib/useSavedLocations'
 import type { AlertsResponse } from '@/lib/alerts/types'
 import { generateTodayInsight } from '@/lib/insights'
@@ -40,7 +41,7 @@ import {
   mockInsight,
   mockSearchSuggestions,
 } from '@/lib/mock-data'
-import type { TemperatureUnit, SelectedLocation, SearchSuggestion } from '@/lib/types'
+import type { TemperatureUnit, SelectedLocation, SearchSuggestion, ForecastSelection } from '@/lib/types'
 
 // Default fallback baseline location (Kolkata)
 const DEFAULT_LOCATION: SelectedLocation = {
@@ -100,6 +101,7 @@ export default function Page() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const [alertsData, setAlertsData] = useState<AlertsResponse | null>(null)
   const [alertsLoading, setAlertsLoading] = useState<boolean>(false)
+  const [forecastSelection, setForecastSelection] = useState<ForecastSelection>(null)
   const signOutHandlerRef = useRef<(() => Promise<void>) | null>(null)
 
   // Hydrate temperature unit from client-side persistent storage
@@ -141,6 +143,18 @@ export default function Page() {
 
   const handleCloseSettings = useCallback(() => {
     setSettingsModalOpen(false)
+  }, [])
+
+  const handleSelectHour = useCallback((index: number) => {
+    setForecastSelection({ type: 'hour', index })
+  }, [])
+
+  const handleSelectDay = useCallback((index: number) => {
+    setForecastSelection({ type: 'day', index })
+  }, [])
+
+  const handleCloseForecastDetail = useCallback(() => {
+    setForecastSelection(null)
   }, [])
 
   const savedState = useSavedLocations(authUser)
@@ -321,6 +335,8 @@ export default function Page() {
   useEffect(() => {
     fetchWeatherForLocation(location)
     fetchAlertsForLocation(location)
+    // Clear open forecast modal when location changes
+    setForecastSelection(null)
   }, [location, fetchWeatherForLocation, fetchAlertsForLocation])
 
   // Handle location selection from search suggestions
@@ -335,6 +351,7 @@ export default function Page() {
       timezone: string
     }) => {
       setGeoNotice(null)
+      setForecastSelection(null)
       const newLoc: SelectedLocation = {
         name: loc.name,
         country: loc.country,
@@ -529,6 +546,7 @@ export default function Page() {
 
   // Handle clicking on "Other cities" card
   const handleSelectOtherCity = useCallback(async (cityName: string) => {
+    setForecastSelection(null)
     try {
       const res = await fetch(`/api/geocode?q=${encodeURIComponent(cityName)}`)
       if (res.ok) {
@@ -565,6 +583,32 @@ export default function Page() {
       rawCelsiuses: activeData.rawCelsiuses,
     })
   }, [activeData, alertsData, location.timezone, location.name, unit])
+
+  // Derive active forecast detail item for modal
+  const selectedForecastItem: ForecastDetailItem | null = useMemo(() => {
+    if (!forecastSelection || !activeData) return null
+    if (forecastSelection.type === 'hour') {
+      const entry = activeData.hourly[forecastSelection.index]
+      if (!entry) return null
+      return {
+        type: 'hour',
+        entry,
+        locationName: location.name,
+        unit,
+      }
+    }
+    if (forecastSelection.type === 'day') {
+      const entry = activeData.weekly[forecastSelection.index]
+      if (!entry) return null
+      return {
+        type: 'day',
+        entry,
+        locationName: location.name,
+        unit,
+      }
+    }
+    return null
+  }, [forecastSelection, activeData, location.name, unit])
 
   const enableDemoMode = () => {
     setError(null)
@@ -865,7 +909,10 @@ export default function Page() {
             <div className="dashboard-grid">
               <HeroCard conditions={activeData.currentConditions} />
               <InsightCard insight={todayInsight || activeData.insight} />
-              <HourlyForecast entries={activeData.hourly} />
+              <HourlyForecast
+                entries={activeData.hourly}
+                onSelectHour={handleSelectHour}
+              />
               <RadarCard
                 latitude={location.latitude}
                 longitude={location.longitude}
@@ -877,7 +924,10 @@ export default function Page() {
                 <UVCard data={activeData.uv} />
               </div>
               <HighlightsGrid conditions={activeData.currentConditions} />
-              <WeeklyForecast entries={activeData.weekly} />
+              <WeeklyForecast
+                entries={activeData.weekly}
+                onSelectDay={handleSelectDay}
+              />
               <OtherCities
                 cities={activeData.otherCities}
                 onSelectCity={handleSelectOtherCity}
@@ -903,6 +953,10 @@ export default function Page() {
         onOpenAuth={handleOpenAuth}
         onSignOut={handleSignOut}
         currentLocation={location}
+      />
+      <ForecastDetailModal
+        item={selectedForecastItem}
+        onClose={handleCloseForecastDetail}
       />
     </main>
   )

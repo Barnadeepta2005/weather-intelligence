@@ -234,6 +234,33 @@ export function formatLocalTime(timezone: string): string {
   }
 }
 
+/** Format ISO8601 date to full readable format e.g. "Sunday, 13 Sep 2026" */
+export function formatFullDate(isoDate: string): string {
+  try {
+    const date = new Date(isoDate)
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  } catch {
+    return isoDate
+  }
+}
+
+/** Format ISO8601 time to readable date and time e.g. "Sun, 13 Sep • 2:00 PM" */
+export function formatFullDateTime(isoTime: string): string {
+  try {
+    const date = new Date(isoTime)
+    const dayStr = date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })
+    const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    return `${dayStr} • ${timeStr}`
+  } catch {
+    return isoTime
+  }
+}
+
 // ── Temperature conversion ──────────────────────────────────────
 
 /** Convert Celsius to Fahrenheit */

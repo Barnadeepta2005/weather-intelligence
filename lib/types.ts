@@ -10,6 +10,28 @@ export interface HourlyEntry {
   temperature: string
   rainProbability: string
   iconType: WeatherIconType
+  // Detail view enriched fields
+  fullTime?: string
+  date?: string
+  condition?: string
+  feelsLike?: string
+  precipitation?: string
+  rain?: string
+  snowfall?: string
+  cloudCover?: string
+  humidity?: string
+  windSpeed?: string
+  windDirection?: string
+  pressure?: string
+  visibility?: string
+  uvIndex?: number
+  uvLevel?: string
+  sunrise?: string
+  sunset?: string
+  rawC?: {
+    temp: number
+    feelsLike: number
+  }
 }
 
 /** A single day in the 7-day forecast */
@@ -19,7 +41,30 @@ export interface DailyEntry {
   low: string
   rainProbability: string
   iconType: WeatherIconType
+  // Detail view enriched fields
+  fullDate?: string
+  date?: string
+  condition?: string
+  precipitationSum?: string
+  rainSum?: string
+  snowfallSum?: string
+  windSpeedMax?: string
+  windDirectionDominant?: string
+  uvIndexMax?: number
+  uvLevel?: string
+  sunrise?: string
+  sunset?: string
+  rawC?: {
+    high: number
+    low: number
+  }
 }
+
+/** Forecast detail modal selection state */
+export type ForecastSelection =
+  | { type: 'hour'; index: number }
+  | { type: 'day'; index: number }
+  | null
 
 /** A saved/other city card */
 export interface CityWeather {

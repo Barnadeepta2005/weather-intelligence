@@ -4,9 +4,10 @@ import type { HourlyEntry } from '@/lib/types'
 
 interface HourlyForecastProps {
   entries: HourlyEntry[]
+  onSelectHour?: (index: number) => void
 }
 
-export function HourlyForecast({ entries }: HourlyForecastProps) {
+export function HourlyForecast({ entries, onSelectHour }: HourlyForecastProps) {
   return (
     <Panel className="hourly-section wide-section">
       <div className="section-heading">
@@ -18,7 +19,20 @@ export function HourlyForecast({ entries }: HourlyForecastProps) {
       </div>
       <div className="hourly-row">
         {entries.map((entry, i) => (
-          <div className={`hour ${i === 0 ? 'active' : ''}`} key={`hour-${entry.time}-${i}`}>
+          <div
+            className={`hour ${i === 0 ? 'active' : ''} interactive-forecast-card`}
+            key={`hour-${entry.time}-${i}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelectHour?.(i)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelectHour?.(i)
+              }
+            }}
+            aria-label={`View detailed weather for ${entry.time}, ${entry.condition || 'temperature'} ${entry.temperature}, rain chance ${entry.rainProbability}`}
+          >
             <span>{entry.time}</span>
             <WeatherIcon type={entry.iconType} size={i === 0 ? 31 : 26} />
             <b>{entry.temperature}</b>
