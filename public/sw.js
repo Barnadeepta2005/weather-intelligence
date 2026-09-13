@@ -136,3 +136,80 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 });
+
+// ============================================================================
+// PHASE 6: REAL WEB PUSH NOTIFICATIONS (FIREBASE CLOUD MESSAGING COMPATIBLE)
+// ============================================================================
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = {
+      notification: {
+        title: 'Weather Alert',
+        body: event.data ? event.data.text() : 'New atmospheric intelligence update available.',
+      },
+    };
+  }
+
+  const notification = payload.notification || {};
+  const data = payload.data || {};
+  const title = notification.title || data.title || 'Weather Alert';
+  const body = notification.body || data.body || 'New atmospheric intelligence update available.';
+  const icon = notification.icon || data.icon || '/icon-192x192.png';
+  const badge = notification.badge || data.badge || '/icon-192x192.png';
+  const tag = notification.tag || data.tag || 'weather-intelligence-alert';
+
+  const notificationOptions = {
+    body,
+    icon,
+    badge,
+    tag,
+    renotify: true,
+    data: {
+      url: data.url || '/',
+      timestamp: Date.now(),
+      ...data,
+    },
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, notificationOptions).then(() => {
+      // Notify active open clients in foreground
+      return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({
+            type: 'PUSH_NOTIFICATION_RECEIVED',
+            payload: { title, body, data: notificationOptions.data },
+          });
+        });
+      });
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If a window is already open at this origin, focus it
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          if ('navigate' in client && targetUrl !== '/') {
+            client.navigate(targetUrl);
+          }
+          return client.focus();
+        }
+      }
+      // Otherwise open a new window
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

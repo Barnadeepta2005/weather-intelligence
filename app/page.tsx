@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import type { User } from 'firebase/auth'
-import { AlertTriangle, RefreshCw, Eye, X, MapPin } from 'lucide-react'
-import { Sidebar } from '@/components/Sidebar'
+import { AlertTriangle, RefreshCw, Eye, X, MapPin, Bell } from 'lucide-react'
+import { Sidebar, type NavActionId } from '@/components/Sidebar'
 import { MobileNav } from '@/components/MobileNav'
+import { MobileBottomNav } from '@/components/MobileBottomNav'
+import { NotificationModal } from '@/components/NotificationModal'
+import { setupForegroundPushListener } from '@/lib/push/client'
 import { TopBar } from '@/components/TopBar'
 import { LocationStrip } from '@/components/LocationStrip'
 import { HeroCard } from '@/components/HeroCard'
@@ -648,17 +651,95 @@ export default function Page() {
     return mockSearchSuggestions
   }, [activeData])
 
+  // Phase 6: Active Navigation State & Handlers
+  const [activeNav, setActiveNav] = useState<NavActionId>('home')
+  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false)
+  const [foregroundToast, setForegroundToast] = useState<{ title: string; body: string } | null>(null)
+
+  const handleNavigate = useCallback((id: NavActionId) => {
+    setActiveNav(id)
+    if (id === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else if (id === 'trends') {
+      const el = document.getElementById('weather-trends-section')
+      if (el) {
+        const yOffset = -24
+        const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset
+        window.scrollTo({ top: y, behavior: 'smooth' })
+      }
+    } else if (id === 'location') {
+      const searchBtn = document.querySelector('.search-btn') as HTMLButtonElement | null
+      searchBtn?.click()
+      setTimeout(() => {
+        const searchInput = document.querySelector('.search-expanded-box input') as HTMLInputElement | null
+        searchInput?.focus()
+      }, 80)
+    } else if (id === 'notifications') {
+      setNotificationsModalOpen(true)
+    } else if (id === 'intelligence') {
+      const el = document.getElementById('weather-intelligence-section')
+      if (el) {
+        const yOffset = -24
+        const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset
+        window.scrollTo({ top: y, behavior: 'smooth' })
+      }
+    }
+  }, [])
+
+  // Active section observer (IntersectionObserver)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (entry.target.id === 'weather-trends-section') {
+              setActiveNav('trends')
+            } else if (entry.target.id === 'weather-intelligence-section') {
+              setActiveNav('intelligence')
+            } else if (entry.target.id === 'main-dashboard-section') {
+              setActiveNav('home')
+            }
+          }
+        })
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+    )
+
+    const homeEl = document.getElementById('main-dashboard-section')
+    const intelEl = document.getElementById('weather-intelligence-section')
+    const trendsEl = document.getElementById('weather-trends-section')
+
+    if (homeEl) observer.observe(homeEl)
+    if (intelEl) observer.observe(intelEl)
+    if (trendsEl) observer.observe(trendsEl)
+
+    return () => observer.disconnect()
+  }, [data, loading])
+
+  // Foreground push notification listener
+  useEffect(() => {
+    const cleanup = setupForegroundPushListener((payload) => {
+      setForegroundToast({
+        title: payload.title,
+        body: payload.body,
+      })
+      setTimeout(() => setForegroundToast(null), 5000)
+    })
+    return cleanup
+  }, [])
+
   return (
     <main className="weather-app">
       <Sidebar
         user={authUser}
+        activeNav={activeNav}
+        onNavigate={handleNavigate}
         onOpenAuth={handleOpenAuth}
         onSignOut={handleSignOut}
-        onNavigatePlaces={() => {
-          document.querySelector('.saved-locations')?.scrollIntoView({ behavior: 'smooth' })
-        }}
         onOpenSettings={handleOpenSettings}
         isSettingsOpen={settingsModalOpen}
+        isNotificationsOpen={notificationsModalOpen}
       />
       <section className="content-shell">
         <MobileNav
@@ -932,7 +1013,7 @@ export default function Page() {
             {alertsData?.hasActiveAlerts && alertsData.alerts.length > 0 && (
               <AlertBanner alerts={alertsData.alerts} />
             )}
-            <div className="dashboard-grid">
+            <div className="dashboard-grid" id="main-dashboard-section">
               <HeroCard conditions={activeData.currentConditions} />
               <InsightCard insight={todayInsight || activeData.insight} />
               <HourlyForecast
@@ -1008,6 +1089,38 @@ export default function Page() {
         unit={unit}
         weatherRisk={weatherIntelligence?.risk}
       />
+      <NotificationModal
+        isOpen={notificationsModalOpen}
+        onClose={() => setNotificationsModalOpen(false)}
+        user={authUser}
+        onOpenAuth={handleOpenAuth}
+      />
+      <MobileBottomNav
+        activeNav={activeNav}
+        onNavigate={handleNavigate}
+        isNotificationsOpen={notificationsModalOpen}
+      />
+      {foregroundToast && (
+        <div className="in-app-push-toast" role="status" aria-live="polite">
+          <Bell size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <strong style={{ fontSize: '12px', display: 'block', letterSpacing: '0.02em' }}>
+              {foregroundToast.title}
+            </strong>
+            <p style={{ margin: '3px 0 0', fontSize: '11px', lineHeight: 1.4 }}>
+              {foregroundToast.body}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForegroundToast(null)}
+            aria-label="Dismiss alert"
+            style={{ background: 'transparent', border: 0, padding: '2px', cursor: 'pointer' }}
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
     </main>
   )
 }

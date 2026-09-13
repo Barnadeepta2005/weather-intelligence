@@ -1,69 +1,105 @@
 'use client'
 
-import { useState } from 'react'
 import { Grid2X2, MapPin, Bell, Activity, CloudSun, UserRound, LogOut, Settings } from 'lucide-react'
 import type { User } from 'firebase/auth'
 
-const NAV_ITEMS: { Icon: typeof Grid2X2; id: string }[] = [
-  { Icon: Grid2X2, id: 'dashboard' },
-  { Icon: MapPin, id: 'places' },
-  { Icon: Bell, id: 'alerts' },
-  { Icon: Activity, id: 'insights' },
-]
+export type NavActionId = 'home' | 'trends' | 'location' | 'notifications' | 'intelligence'
 
-interface SidebarProps {
+export interface SidebarProps {
   user?: User | null
+  activeNav?: string
+  onNavigate?: (id: NavActionId) => void
   onOpenAuth?: () => void
   onSignOut?: () => void
-  onNavigatePlaces?: () => void
   onOpenSettings?: () => void
   isSettingsOpen?: boolean
+  isNotificationsOpen?: boolean
 }
 
 export function Sidebar({
   user = null,
+  activeNav = 'home',
+  onNavigate,
   onOpenAuth,
   onSignOut,
-  onNavigatePlaces,
   onOpenSettings,
   isSettingsOpen = false,
+  isNotificationsOpen = false,
 }: SidebarProps) {
-  const [activeNav, setActiveNav] = useState('dashboard')
-
-  const handleNavClick = (id: string) => {
-    setActiveNav(id)
-    if (id === 'places') {
-      if (onNavigatePlaces) {
-        onNavigatePlaces()
-      } else {
-        const savedSection = document.querySelector('.saved-locations') || document.querySelector('.places-section')
-        savedSection?.scrollIntoView({ behavior: 'smooth' })
-      }
-    }
-  }
-
   return (
-    <aside className="sidebar">
-      <div className="brand-lockup">
+    <aside className="sidebar" aria-label="Desktop navigation rail">
+      {/* 1. WEATHER / HOME */}
+      <button
+        type="button"
+        className={`brand-lockup brand-btn ${activeNav === 'home' ? 'active' : ''}`}
+        onClick={() => onNavigate?.('home')}
+        aria-label="Weather Home"
+        title="Scroll to Primary Weather Dashboard"
+      >
         <span className="brand-mark">
           <CloudSun size={22} />
         </span>
         <span>WI</span>
-      </div>
-      <nav aria-label="Main navigation">
-        {NAV_ITEMS.map(({ Icon, id }) => (
-          <button
-            key={id}
-            type="button"
-            className={`nav-item ${activeNav === id ? 'active' : ''}`}
-            onClick={() => handleNavClick(id)}
-            aria-label={id}
-          >
-            <Icon size={19} />
-          </button>
-        ))}
+      </button>
+
+      {/* PRIMARY RAIL CONTROLS */}
+      <nav aria-label="Main rail navigation">
+        {/* 2. GRID -> WEATHER TRENDS */}
+        <button
+          type="button"
+          className={`nav-item ${activeNav === 'trends' ? 'active' : ''}`}
+          onClick={() => onNavigate?.('trends')}
+          aria-label="Weather Trends"
+          title="Weather Trends & Historical Comparison"
+        >
+          <Grid2X2 size={19} />
+        </button>
+
+        {/* 3. LOCATION PIN -> SEARCH / GEOLOCATION */}
+        <button
+          type="button"
+          className={`nav-item ${activeNav === 'location' ? 'active' : ''}`}
+          onClick={() => onNavigate?.('location')}
+          aria-label="Location Search"
+          title="Search City or Use Geolocation"
+        >
+          <MapPin size={19} />
+        </button>
+
+        {/* 4. BELL -> NOTIFICATIONS */}
+        <button
+          type="button"
+          className={`nav-item ${isNotificationsOpen || activeNav === 'notifications' ? 'active' : ''}`}
+          onClick={() => onNavigate?.('notifications')}
+          aria-label="Notifications"
+          title="Weather Alerts & Push Notifications"
+        >
+          <Bell size={19} />
+        </button>
+
+        {/* 5. ACTIVITY / PULSE -> ADVANCED WEATHER INTELLIGENCE */}
+        <button
+          type="button"
+          className={`nav-item ${activeNav === 'intelligence' ? 'active' : ''}`}
+          onClick={() => onNavigate?.('intelligence')}
+          aria-label="Weather Intelligence"
+          title="Advanced Weather Intelligence Decision Support"
+        >
+          <Activity size={19} />
+        </button>
       </nav>
-      <div className="sidebar-bottom" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '13px', alignItems: 'center' }}>
+
+      {/* BOTTOM CONTROLS: SETTINGS & ACCOUNT */}
+      <div
+        className="sidebar-bottom"
+        style={{
+          marginTop: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '13px',
+          alignItems: 'center',
+        }}
+      >
         <button
           type="button"
           className={`nav-item ${isSettingsOpen ? 'active' : ''}`}
@@ -73,6 +109,7 @@ export function Sidebar({
         >
           <Settings size={19} />
         </button>
+
         {user ? (
           <button
             type="button"
