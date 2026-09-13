@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Search, X, Navigation, Loader2, AlertTriangle } from 'lucide-react'
+import { InstallAppButton } from '@/components/PWAProvider'
 import type { TemperatureUnit, SearchSuggestion, GeocodedLocation } from '@/lib/types'
 import type { ReactNode } from 'react'
 
@@ -357,6 +358,9 @@ export function TopBar({
             °F
           </button>
         </div>
+
+        {/* INSTALL APP BUTTON (PWA) */}
+        <InstallAppButton />
 
         {authControl}
       </div>

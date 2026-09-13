@@ -1,6 +1,7 @@
 'use client'
 
 import { CloudSun, Navigation, Settings, Loader2, UserRound, LogOut } from 'lucide-react'
+import { MobileInstallButton } from '@/components/PWAProvider'
 import type { User } from 'firebase/auth'
 
 interface MobileNavProps {
@@ -35,6 +36,7 @@ export function MobileNav({
         </strong>
       </div>
       <div className="mobile-nav-actions">
+        <MobileInstallButton />
         <button
           type="button"
           className="mobile-location"

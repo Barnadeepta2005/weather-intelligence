@@ -1675,6 +1675,223 @@
   }
 }
 
+/* Persistent Device-Aware PWA Install Buttons & Instruction Modal */
+.install-app-btn {
+  height: 42px;
+  padding: 0 12px;
+  border: 2px solid var(--ink);
+  background: var(--acid);
+  box-shadow: 3px 3px 0 var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--ink);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.install-app-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink);
+  background: #d4ff00;
+}
+
+.install-app-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.install-app-btn:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.mobile-install-btn {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  border: 2px solid var(--ink);
+  background: var(--acid);
+  box-shadow: 3px 3px 0 var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ink);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.mobile-install-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.mobile-install-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.mobile-install-btn:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* PWA Instruction Modal */
+.pwa-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  background: rgba(17, 17, 17, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow-y: auto;
+  animation: auth-fade-in 0.16s ease;
+}
+
+.pwa-modal-card {
+  position: relative;
+  width: min(440px, 100%);
+  background: var(--surface);
+  border: 3px solid var(--ink);
+  box-shadow: 8px 8px 0 var(--ink);
+  padding: 24px 22px;
+  animation: auth-pop-in 0.18s ease;
+}
+
+.pwa-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 12px;
+}
+
+.pwa-modal-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pwa-modal-tag {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.pwa-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.pwa-modal-close-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.pwa-modal-close-btn:hover {
+  background: var(--acid);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.pwa-modal-body {
+  margin-bottom: 18px;
+}
+
+.pwa-instructions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pwa-instruction-intro {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.pwa-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #f0ece2;
+  border: 2px solid var(--ink);
+  padding: 10px 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.pwa-step-num {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  background: var(--acid);
+  border: 1.5px solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.pwa-step-text {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.pwa-instruction-note {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #fef08a;
+  border: 2px solid var(--ink);
+  padding: 8px 10px;
+  line-height: 1.4;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.pwa-modal-footer {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .top-actions .install-app-btn {
+    display: none !important;
+  }
+  .pwa-modal-card {
+    padding: 20px 16px;
+  }
+}
+
+
 
 
 

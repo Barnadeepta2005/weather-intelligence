@@ -1,14 +1,55 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { WifiOff, Download, X, Share } from 'lucide-react'
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  type ReactNode,
+} from 'react'
+import {
+  WifiOff,
+  Download,
+  X,
+  Share,
+  PlusSquare,
+  Smartphone,
+  Laptop,
+} from 'lucide-react'
 
-export function PWAProvider() {
+interface PWAContextType {
+  isStandalone: boolean
+  canInstall: boolean
+  isIosSafari: boolean
+  isOffline: boolean
+  triggerInstall: () => void
+}
+
+const PWAContext = createContext<PWAContextType>({
+  isStandalone: false,
+  canInstall: false,
+  isIosSafari: false,
+  isOffline: false,
+  triggerInstall: () => {},
+})
+
+export function usePWA() {
+  return useContext(PWAContext)
+}
+
+interface PWAProviderProps {
+  children?: ReactNode
+}
+
+export function PWAProvider({ children }: PWAProviderProps) {
   const [isOffline, setIsOffline] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [showInstallBanner, setShowInstallBanner] = useState(false)
+  const [isStandalone, setIsStandalone] = useState(false)
   const [isIosSafari, setIsIosSafari] = useState(false)
-  const [showIosHint, setShowIosHint] = useState(false)
+  const [isAndroid, setIsAndroid] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalType, setModalType] = useState<'ios' | 'android' | 'unsupported'>('ios')
 
   // 1. Service Worker Registration
   useEffect(() => {
@@ -16,7 +57,6 @@ export function PWAProvider() {
       return
     }
 
-    // Register service worker after window load to preserve page load speed
     const handleLoad = () => {
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
@@ -58,50 +98,63 @@ export function PWAProvider() {
     }
   }, [])
 
-  // 3. Standalone Mode & Install Prompt Handling
+  // 3. Standalone Mode & Device Detection
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // Check if app is already running as installed PWA
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true ||
-      document.referrer.includes('android-app://')
-
-    if (isStandalone) {
-      // Installed app — never show install banners
-      return
+    const checkStandalone = () => {
+      const standalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.matchMedia('(display-mode: minimal-ui)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://')
+      setIsStandalone(Boolean(standalone))
+      return standalone
     }
 
-    // Check if user dismissed install prompt recently
-    const dismissedUntil = localStorage.getItem('wi_pwa_dismissed_until')
-    const isDismissed = dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)
+    const isInstalled = checkStandalone()
+    if (isInstalled) return
 
-    // Detect iOS Safari
+    // Detect display mode changes
+    const mql = window.matchMedia('(display-mode: standalone)')
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setIsStandalone(true)
+        setModalOpen(false)
+      }
+    }
+    mql.addEventListener?.('change', handleMediaChange)
+
+    // Detect iOS Safari (including iPadOS with desktop user agent)
     const userAgent = window.navigator.userAgent.toLowerCase()
-    const isIos = /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream
-    const isSafari = /safari/.test(userAgent) && !/chrome|crios|fxios|edg/.test(userAgent)
+    const isIos =
+      (/iphone|ipad|ipod/.test(userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) &&
+      !(window as any).MSStream
+    const isSafari = /safari/.test(userAgent) && !/chrome|crios|fxios|edg|android/.test(userAgent)
 
-    if (isIos && isSafari && !isDismissed) {
+    if (isIos && isSafari) {
       setIsIosSafari(true)
     }
 
-    // Listen for native beforeinstallprompt (Chromium / Edge / Android)
+    if (/android/.test(userAgent)) {
+      setIsAndroid(true)
+    }
+
+    // Capture beforeinstallprompt (Chromium / Edge / Android)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e)
-      if (!isDismissed) {
-        setShowInstallBanner(true)
-      }
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
 
-    // Listen for appinstalled
+    // Capture appinstalled
     const handleAppInstalled = () => {
-      setShowInstallBanner(false)
-      setShowIosHint(false)
       setDeferredPrompt(null)
+      setIsStandalone(true)
+      setModalOpen(false)
       if (process.env.NODE_ENV !== 'production') {
         console.log('[PWA] Application successfully installed.')
       }
@@ -110,42 +163,65 @@ export function PWAProvider() {
     window.addEventListener('appinstalled', handleAppInstalled)
 
     return () => {
+      mql.removeEventListener?.('change', handleMediaChange)
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       window.removeEventListener('appinstalled', handleAppInstalled)
     }
   }, [])
 
-  // Handle native install click
-  const handleInstallClick = useCallback(async () => {
-    if (!deferredPrompt) return
-    try {
-      deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[PWA] User choice:', outcome)
+  // Trigger installation or instruction modal
+  const triggerInstall = useCallback(async () => {
+    if (isIosSafari) {
+      // iOS Safari instructions (Safari does not support beforeinstallprompt)
+      setModalType('ios')
+      setModalOpen(true)
+    } else if (deferredPrompt) {
+      // Direct native prompt (Chrome, Edge, Android)
+      try {
+        deferredPrompt.prompt()
+        const { outcome } = await deferredPrompt.userChoice
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[PWA] Install prompt outcome:', outcome)
+        }
+        if (outcome === 'accepted') {
+          setDeferredPrompt(null)
+        }
+      } catch (err) {
+        console.warn('[PWA] Install prompt error:', err)
       }
-      setDeferredPrompt(null)
-      setShowInstallBanner(false)
-    } catch (err) {
-      console.warn('[PWA] Installation prompt failed:', err)
+    } else if (isAndroid) {
+      // Android browser fallback (when beforeinstallprompt is unavailable or dismissed)
+      setModalType('android')
+      setModalOpen(true)
+    } else {
+      // Unsupported desktop browser (e.g. Firefox, Safari macOS)
+      setModalType('unsupported')
+      setModalOpen(true)
     }
-  }, [deferredPrompt])
+  }, [deferredPrompt, isIosSafari, isAndroid])
 
-  // Handle install dismiss
-  const handleDismiss = useCallback(() => {
-    setShowInstallBanner(false)
-    setShowIosHint(false)
-    // Dismiss for 7 days
-    const nextWeek = Date.now() + 7 * 24 * 60 * 60 * 1000
-    try {
-      localStorage.setItem('wi_pwa_dismissed_until', String(nextWeek))
-    } catch {
-      // Ignore storage errors
+  // Escape key listener for instruction modal
+  useEffect(() => {
+    if (!modalOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModalOpen(false)
     }
-  }, [])
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [modalOpen])
+
+  const contextValue: PWAContextType = {
+    isStandalone,
+    canInstall: Boolean(deferredPrompt || isIosSafari),
+    isIosSafari,
+    isOffline,
+    triggerInstall,
+  }
 
   return (
-    <>
+    <PWAContext.Provider value={contextValue}>
+      {children}
+
       {/* OFFLINE STATUS BANNER */}
       {isOffline && (
         <div
@@ -162,66 +238,170 @@ export function PWAProvider() {
         </div>
       )}
 
-      {/* INSTALL PROMPT BANNER (Chromium / Edge / Android) */}
-      {showInstallBanner && deferredPrompt && (
+      {/* PWA INSTALLATION INSTRUCTION MODAL */}
+      {modalOpen && (
         <div
-          className="pwa-install-banner"
-          role="region"
-          aria-label="Install App Prompt"
+          className="pwa-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pwa-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalOpen(false)
+          }}
         >
-          <div className="pwa-install-info">
-            <span className="pwa-install-tag">WEB APPLICATION</span>
-            <strong className="pwa-install-title">INSTALL WEATHER INTELLIGENCE</strong>
-            <p className="pwa-install-desc">
-              Get a faster, standalone experience with homescreen access.
-            </p>
-          </div>
-          <div className="pwa-install-actions">
-            <button
-              type="button"
-              className="pwa-btn primary"
-              onClick={handleInstallClick}
-            >
-              <Download size={14} />
-              INSTALL
-            </button>
-            <button
-              type="button"
-              className="pwa-btn secondary"
-              onClick={handleDismiss}
-              aria-label="Dismiss install prompt"
-            >
-              NOT NOW
-            </button>
-          </div>
-        </div>
-      )}
+          <div className="pwa-modal-card">
+            {/* Modal Header */}
+            <div className="pwa-modal-header">
+              <div className="pwa-modal-header-text">
+                <span className="pwa-modal-tag">PWA INSTALLATION</span>
+                <h3 id="pwa-modal-title" className="pwa-modal-title">
+                  {modalType === 'ios'
+                    ? 'Add Weather Intelligence to your Home Screen'
+                    : modalType === 'android'
+                    ? 'Install Weather Intelligence'
+                    : 'App Installation'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="pwa-modal-close-btn"
+                onClick={() => setModalOpen(false)}
+                aria-label="Close installation instructions"
+              >
+                <X size={16} />
+              </button>
+            </div>
 
-      {/* IOS SAFARI HINT BANNER (Conditional) */}
-      {isIosSafari && showIosHint && (
-        <div
-          className="pwa-install-banner"
-          role="region"
-          aria-label="iOS Install Instructions"
-        >
-          <div className="pwa-install-info">
-            <span className="pwa-install-tag">IOS APP SHORTCUT</span>
-            <strong className="pwa-install-title">ADD TO HOMESCREEN</strong>
-            <p className="pwa-install-desc">
-              Tap <Share size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> in Safari and select <strong>&quot;Add to Home Screen&quot;</strong>.
-            </p>
-          </div>
-          <div className="pwa-install-actions">
-            <button
-              type="button"
-              className="pwa-btn secondary"
-              onClick={handleDismiss}
-            >
-              GOT IT
-            </button>
+            {/* Modal Content */}
+            <div className="pwa-modal-body">
+              {modalType === 'ios' ? (
+                <div className="pwa-instructions-list">
+                  <p className="pwa-instruction-intro">
+                    Add Weather Intelligence to your Home Screen for full-screen standalone access:
+                  </p>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">1</span>
+                    <div className="pwa-step-text">
+                      Tap <strong>Share</strong> <Share size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> in the Safari toolbar.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">2</span>
+                    <div className="pwa-step-text">
+                      Scroll down and tap <strong>&quot;Add to Home Screen&quot;</strong> <PlusSquare size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">3</span>
+                    <div className="pwa-step-text">
+                      Tap <strong>&quot;Add&quot;</strong> in the top-right corner.
+                    </div>
+                  </div>
+                  <div className="pwa-instruction-note">
+                    Tap Share, then Add to Home Screen.
+                  </div>
+                </div>
+              ) : modalType === 'android' ? (
+                <div className="pwa-instructions-list">
+                  <p className="pwa-instruction-intro">
+                    Install Weather Intelligence to your device for standalone access:
+                  </p>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">1</span>
+                    <div className="pwa-step-text">
+                      Tap the browser menu (three dots <strong>⋮</strong> in the corner).
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">2</span>
+                    <div className="pwa-step-text">
+                      Tap <strong>&quot;Install app&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong>.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">3</span>
+                    <div className="pwa-step-text">
+                      Tap <strong>&quot;Install&quot;</strong> to confirm.
+                    </div>
+                  </div>
+                  <div className="pwa-instruction-note">
+                    💡 The app icon will appear in your app drawer and Home Screen.
+                  </div>
+                </div>
+              ) : (
+                <div className="pwa-instructions-list">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#b45309', fontWeight: 900, fontSize: '13px' }}>
+                    <Laptop size={18} />
+                    <span>APP INSTALLATION NOT AVAILABLE</span>
+                  </div>
+                  <p style={{ margin: '8px 0', fontSize: '12px', lineHeight: 1.5, color: '#333' }}>
+                    App installation is not available in this browser.
+                  </p>
+                  <div className="pwa-instruction-note" style={{ background: '#f1f5f9', borderLeftColor: 'var(--ink)' }}>
+                    To install Weather Intelligence as a standalone app, open this page in <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong>, or <strong>Brave</strong>.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pwa-modal-footer">
+              <button
+                type="button"
+                className="pwa-btn primary"
+                onClick={() => setModalOpen(false)}
+                style={{ width: '100%' }}
+              >
+                GOT IT
+              </button>
+            </div>
           </div>
         </div>
       )}
-    </>
+    </PWAContext.Provider>
+  )
+}
+
+/**
+ * Desktop Top-Level Action Button: "INSTALL APP"
+ * Automatically hidden if app is running in standalone mode.
+ */
+export function InstallAppButton({ className = '' }: { className?: string }) {
+  const { isStandalone, triggerInstall } = usePWA()
+  if (isStandalone) return null
+
+  return (
+    <button
+      type="button"
+      onClick={triggerInstall}
+      className={`install-app-btn ${className}`}
+      aria-label="Install App"
+      title="Install Weather Intelligence App"
+    >
+      <Download size={14} />
+      <span>INSTALL APP</span>
+    </button>
+  )
+}
+
+/**
+ * Mobile Navigation Icon Button
+ * Compact 42x42 square matching mobile navigation rhythm.
+ * Automatically hidden if app is running in standalone mode.
+ */
+export function MobileInstallButton({ className = '' }: { className?: string }) {
+  const { isStandalone, triggerInstall } = usePWA()
+  if (isStandalone) return null
+
+  return (
+    <button
+      type="button"
+      onClick={triggerInstall}
+      className={`mobile-install-btn ${className}`}
+      aria-label="Install App"
+      title="Install Weather Intelligence App"
+    >
+      <Download size={18} />
+    </button>
   )
 }
