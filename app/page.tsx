@@ -23,9 +23,11 @@ import { AlertBanner } from '@/components/AlertBanner'
 import { ForecastDetailModal, type ForecastDetailItem } from '@/components/ForecastDetailModal'
 import { WeatherSnapshot } from '@/components/WeatherSnapshot'
 import { WeatherTrends } from '@/components/trends/WeatherTrends'
+import { WeatherIntelligence } from '@/components/intelligence/WeatherIntelligence'
 import { useSavedLocations } from '@/lib/useSavedLocations'
 import type { AlertsResponse } from '@/lib/alerts/types'
 import { generateTodayInsight } from '@/lib/insights'
+import { computeWeatherIntelligence } from '@/lib/intelligence'
 import {
   applyTemperatureUnit,
   DEFAULT_COORDINATES,
@@ -116,6 +118,9 @@ export default function Page() {
       }
     } catch {
       // Ignore localStorage errors
+    }
+    if (typeof window !== 'undefined') {
+      ;(window as any).__computeWeatherIntelligence = computeWeatherIntelligence
     }
   }, [])
 
@@ -589,6 +594,20 @@ export default function Page() {
     })
   }, [activeData, alertsData, location.timezone, location.name, unit])
 
+  // Deterministically compute Advanced Weather Intelligence (Phase 5)
+  const weatherIntelligence = useMemo(() => {
+    if (!activeData) return null
+    return computeWeatherIntelligence({
+      current: activeData.currentConditions,
+      rawFeelsLikeC: activeData.rawCelsiuses?.feelsLike,
+      hourly: activeData.hourly,
+      airQuality: activeData.airQuality,
+      uv: activeData.uv,
+      alerts: alertsData?.alerts || [],
+      unit,
+    })
+  }, [activeData, alertsData, unit])
+
   // Derive active forecast detail item for modal
   const selectedForecastItem: ForecastDetailItem | null = useMemo(() => {
     if (!forecastSelection || !activeData) return null
@@ -935,6 +954,13 @@ export default function Page() {
                 entries={activeData.weekly}
                 onSelectDay={handleSelectDay}
               />
+              {weatherIntelligence && (
+                <WeatherIntelligence
+                  data={weatherIntelligence}
+                  cityName={location.name}
+                  unit={unit}
+                />
+              )}
               <WeatherTrends
                 latitude={location.latitude}
                 longitude={location.longitude}
@@ -980,6 +1006,7 @@ export default function Page() {
         alertsData={alertsData}
         todayInsight={todayInsight}
         unit={unit}
+        weatherRisk={weatherIntelligence?.risk}
       />
     </main>
   )

@@ -19,6 +19,7 @@ interface WeatherSnapshotProps {
   alertsData: AlertsResponse | null
   todayInsight: InsightData | null
   unit: TemperatureUnit
+  weatherRisk?: { score: number; level: string } | null
 }
 
 /** Sanitize city name and format deterministic filename */
@@ -228,6 +229,7 @@ export function WeatherSnapshot({
   alertsData,
   todayInsight,
   unit,
+  weatherRisk,
 }: WeatherSnapshotProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [pngUrl, setPngUrl] = useState<string | null>(null)
@@ -411,6 +413,25 @@ export function WeatherSnapshot({
 
       ctx.fillStyle = '#000000'
       ctx.fillText(condition, condPillX + 18, condPillY + 28)
+
+      // Phase 5: Optional compact intelligence field
+      if (weatherRisk && typeof weatherRisk.score === 'number') {
+        const riskBadgeX = condPillX + condPillW + 14
+        const riskText = `ATMOS WEATHER RISK: ${weatherRisk.score}/100 — ${weatherRisk.level}`
+        ctx.font = '900 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        const riskTextW = ctx.measureText(riskText).width
+        const riskPillW = riskTextW + 28
+        const riskPillH = condPillH
+
+        ctx.fillStyle = weatherRisk.score >= 60 ? '#fee2e2' : weatherRisk.score >= 40 ? '#fef08a' : '#dcfce7'
+        ctx.fillRect(riskBadgeX, condPillY, riskPillW, riskPillH)
+        ctx.strokeStyle = '#000000'
+        ctx.lineWidth = 3
+        ctx.strokeRect(riskBadgeX, condPillY, riskPillW, riskPillH)
+
+        ctx.fillStyle = '#000000'
+        ctx.fillText(riskText, riskBadgeX + 14, condPillY + 27)
+      }
 
       // Secondary Temp Strip: Feels Like / High / Low
       const subMetricsText = `FEELS LIKE ${feelsLikeVal}° • HIGH ${highVal}° • LOW ${lowVal}°`

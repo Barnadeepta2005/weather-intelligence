@@ -2489,6 +2489,513 @@
   }
 }
 
+/* ==========================================================================
+   PHASE 5 — ADVANCED WEATHER INTELLIGENCE & DECISION SUPPORT
+   ========================================================================== */
+.intelligence-section {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.intelligence-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+}
+
+.intelligence-subheading {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.intelligence-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--acid);
+  border: 2px solid var(--ink);
+  box-shadow: 2.5px 2.5px 0 var(--ink);
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.intelligence-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Shared Intelligence Card Styles */
+.intel-card {
+  border: 2.5px solid var(--ink);
+  background: var(--surface);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.intel-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1.5px solid rgba(17, 17, 17, 0.15);
+  padding-bottom: 10px;
+}
+
+.intel-kicker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.intel-kicker {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.intel-title {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.intel-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.intel-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.intel-body-headline {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.intel-body-details {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #333;
+  margin: 0;
+}
+
+.intel-sub-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+  background: #f0ece2;
+  border: 1px solid var(--ink);
+  padding: 2px 8px;
+  width: fit-content;
+}
+
+/* Weather Risk Score Card */
+.risk-score-card {
+  background: #fffdf9;
+  border-left: 6px solid var(--ink);
+}
+
+.risk-level-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.risk-score-main {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+
+.risk-number-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.risk-score-val {
+  font-size: clamp(52px, 6vw, 76px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.85;
+  color: var(--ink);
+}
+
+.risk-score-max {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.risk-drivers-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.risk-drivers-label {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.risk-driver-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.risk-driver-chip {
+  padding: 3px 8px;
+  font-size: 9.5px;
+  font-weight: 900;
+  background: #f0ece2;
+  border: 1.5px solid var(--ink);
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  letter-spacing: 0.03em;
+}
+
+.imd-alert-separation-bar {
+  margin: 6px 0;
+  padding: 10px 14px;
+  background: #fff9e6;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.imd-alert-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1.5px solid var(--ink);
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  width: fit-content;
+}
+
+.imd-alert-note {
+  font-size: 10.5px;
+  color: #555;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.risk-summary-text {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--ink);
+  margin: 0;
+}
+
+.risk-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border-top: 1px solid rgba(17, 17, 17, 0.12);
+  padding-top: 8px;
+}
+
+/* Rain Timing Card */
+.rain-timing-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rain-timing-headline {
+  font-size: 16px;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.rain-timing-details {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #333;
+  margin: 0;
+}
+
+.rain-timing-metrics {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.rain-metric-box {
+  flex: 1;
+  min-width: 90px;
+  padding: 8px 12px;
+  background: #f0ece2;
+  border: 1.5px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rain-metric-label {
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.rain-metric-val {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+/* 2-Column Grid Containers */
+.outdoor-commute-container,
+.heat-air-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.intel-metric-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.intel-metric-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #f0ece2;
+  border: 1.5px solid var(--ink);
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+.intel-metric-tag span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.intel-source-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f0ece2;
+  border: 1.5px solid var(--ink);
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  margin-top: 4px;
+}
+
+.source-tag {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.source-aqi {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+/* Today's Action Plan */
+.action-plan-card {
+  background: #fff;
+}
+
+.intel-plan-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.action-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.action-plan-item {
+  border: 2px solid var(--ink);
+  background: #fdfbf7;
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.action-item-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.action-item-icon {
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--ink);
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  display: grid;
+  place-items: center;
+}
+
+.action-item-category {
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-right: auto;
+}
+
+.action-item-priority {
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: #f0ece2;
+  border: 1px solid var(--ink);
+  padding: 1px 5px;
+}
+
+.action-item-title {
+  font-size: 13.5px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.action-item-desc {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #444;
+  margin: 0;
+}
+
+.intel-footer-note {
+  margin-top: 14px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* Responsive Overrides */
+@media (max-width: 900px) {
+  .outdoor-commute-container,
+  .heat-air-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .intelligence-section {
+    padding: 16px;
+  }
+  .intelligence-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .intel-card {
+    padding: 16px 14px;
+  }
+  .risk-score-main {
+    gap: 14px;
+  }
+  .risk-score-val {
+    font-size: 50px;
+  }
+  .action-plan-grid {
+    grid-template-columns: 1fr;
+  }
+  .intel-footer-note {
+    text-align: left;
+    font-size: 8px;
+  }
+}
+
+
 
 
 
