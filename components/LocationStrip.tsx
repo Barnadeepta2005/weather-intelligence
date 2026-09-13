@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, Heart, Loader2 } from 'lucide-react'
+import { MapPin, Heart, Loader2, Share2 } from 'lucide-react'
 import type { LocationData } from '@/lib/types'
 
 interface LocationStripProps {
@@ -11,6 +11,7 @@ interface LocationStripProps {
   isSaving?: boolean
   isAuthenticated?: boolean
   onOpenAuth?: () => void
+  onOpenShare?: () => void
 }
 
 export function LocationStrip({
@@ -21,6 +22,7 @@ export function LocationStrip({
   isSaving = false,
   isAuthenticated = false,
   onOpenAuth,
+  onOpenShare,
 }: LocationStripProps) {
   const adminSuffix =
     location.admin1 && location.admin1.toUpperCase() !== location.city.toUpperCase()
@@ -49,21 +51,35 @@ export function LocationStrip({
       <span className="updated">
         LOCAL TIME {location.localTime} / {isLive ? `UPDATED ${location.lastUpdated}` : 'DEMO MODE (OFFLINE)'}
       </span>
-      <button
-        type="button"
-        onClick={handleSaveClick}
-        disabled={isSaving}
-        className={`save-btn ${isSaved ? 'saved' : ''}`}
-        aria-label={isSaved ? 'Remove from saved locations' : 'Save this location'}
-        title={!isAuthenticated ? 'Sign in to save this location' : isSaved ? 'Click to remove from saved locations' : 'Save to your account'}
-      >
-        {isSaving ? (
-          <Loader2 size={14} className="animate-spin" />
-        ) : (
-          <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
+      <div className="location-strip-actions">
+        {onOpenShare && (
+          <button
+            type="button"
+            onClick={onOpenShare}
+            className="share-weather-btn"
+            aria-label="Share weather snapshot"
+            title="Create shareable weather card"
+          >
+            <Share2 size={13} />
+            SHARE
+          </button>
         )}
-        {isSaved ? 'SAVED' : 'SAVE LOCATION'}
-      </button>
+        <button
+          type="button"
+          onClick={handleSaveClick}
+          disabled={isSaving}
+          className={`save-btn ${isSaved ? 'saved' : ''}`}
+          aria-label={isSaved ? 'Remove from saved locations' : 'Save this location'}
+          title={!isAuthenticated ? 'Sign in to save this location' : isSaved ? 'Click to remove from saved locations' : 'Save to your account'}
+        >
+          {isSaving ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
+          )}
+          {isSaved ? 'SAVED' : 'SAVE LOCATION'}
+        </button>
+      </div>
     </div>
   )
 }

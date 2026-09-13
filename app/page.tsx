@@ -21,6 +21,7 @@ import { SavedLocations } from '@/components/SavedLocations'
 import { SettingsModal } from '@/components/SettingsModal'
 import { AlertBanner } from '@/components/AlertBanner'
 import { ForecastDetailModal, type ForecastDetailItem } from '@/components/ForecastDetailModal'
+import { WeatherSnapshot } from '@/components/WeatherSnapshot'
 import { useSavedLocations } from '@/lib/useSavedLocations'
 import type { AlertsResponse } from '@/lib/alerts/types'
 import { generateTodayInsight } from '@/lib/insights'
@@ -102,6 +103,7 @@ export default function Page() {
   const [alertsData, setAlertsData] = useState<AlertsResponse | null>(null)
   const [alertsLoading, setAlertsLoading] = useState<boolean>(false)
   const [forecastSelection, setForecastSelection] = useState<ForecastSelection>(null)
+  const [snapshotModalOpen, setSnapshotModalOpen] = useState<boolean>(false)
   const signOutHandlerRef = useRef<(() => Promise<void>) | null>(null)
 
   // Hydrate temperature unit from client-side persistent storage
@@ -335,8 +337,9 @@ export default function Page() {
   useEffect(() => {
     fetchWeatherForLocation(location)
     fetchAlertsForLocation(location)
-    // Clear open forecast modal when location changes
+    // Clear open forecast modal and snapshot preview when location changes
     setForecastSelection(null)
+    setSnapshotModalOpen(false)
   }, [location, fetchWeatherForLocation, fetchAlertsForLocation])
 
   // Handle location selection from search suggestions
@@ -352,6 +355,7 @@ export default function Page() {
     }) => {
       setGeoNotice(null)
       setForecastSelection(null)
+      setSnapshotModalOpen(false)
       const newLoc: SelectedLocation = {
         name: loc.name,
         country: loc.country,
@@ -894,6 +898,7 @@ export default function Page() {
               isSaving={savedState.saving}
               isAuthenticated={Boolean(authUser)}
               onOpenAuth={handleOpenAuth}
+              onOpenShare={() => setSnapshotModalOpen(true)}
             />
             <SavedLocations
               user={authUser}
@@ -958,6 +963,15 @@ export default function Page() {
       <ForecastDetailModal
         item={selectedForecastItem}
         onClose={handleCloseForecastDetail}
+      />
+      <WeatherSnapshot
+        isOpen={snapshotModalOpen}
+        onClose={() => setSnapshotModalOpen(false)}
+        location={location}
+        data={activeData}
+        alertsData={alertsData}
+        todayInsight={todayInsight}
+        unit={unit}
       />
     </main>
   )

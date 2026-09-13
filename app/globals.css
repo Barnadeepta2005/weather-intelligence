@@ -1214,6 +1214,319 @@
   }
 }
 
+/* ==========================================================================
+   LOCATION STRIP ACTIONS & SHARE BUTTON (Phase 3E)
+   ========================================================================== */
+.location-strip-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.share-weather-btn {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+}
+
+.share-weather-btn:hover {
+  background: var(--mint);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.share-weather-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* ==========================================================================
+   WEATHER SNAPSHOT MODAL (Phase 3E)
+   ========================================================================== */
+.snapshot-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: auth-pop-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.snapshot-modal-card {
+  width: 100%;
+  max-width: 580px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 3px solid var(--ink);
+  box-shadow: 8px 8px 0 var(--ink);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.snapshot-modal-header {
+  padding: 14px 18px;
+  border-bottom: 2.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #faf8f2;
+  flex-shrink: 0;
+}
+
+.snapshot-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.snapshot-tag {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.snapshot-modal-heading {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.15;
+}
+
+.snapshot-close-btn {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  box-shadow: 2px 2px 0 var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+  flex-shrink: 0;
+}
+
+.snapshot-close-btn:hover {
+  background: #fee2e2;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+/* Preview container */
+.snapshot-preview-area {
+  padding: 18px;
+  background: #f1ede3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  max-height: 64vh;
+  min-height: 320px;
+}
+
+.snapshot-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.snapshot-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #991b1b;
+  padding: 20px;
+}
+
+.snapshot-image-frame {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+}
+
+.snapshot-preview-img {
+  max-width: 100%;
+  max-height: 58vh;
+  height: auto;
+  object-fit: contain;
+  border: 2.5px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  background: #ffffff;
+}
+
+/* Toast */
+.snapshot-toast {
+  padding: 8px 16px;
+  background: var(--acid);
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  animation: auth-pop-in 0.15s ease-out;
+}
+
+/* Modal Actions */
+.snapshot-modal-actions {
+  padding: 14px 18px;
+  border-top: 2.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #faf8f2;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.snapshot-action-btn {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  border: 2px solid var(--ink);
+  box-shadow: 2.5px 2.5px 0 var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+}
+
+.snapshot-action-btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 3.5px 3.5px 0 var(--ink);
+}
+
+.snapshot-action-btn:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+}
+
+.snapshot-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.snapshot-action-btn.primary {
+  background: var(--acid);
+  color: var(--ink);
+}
+
+.snapshot-action-btn.share {
+  background: var(--mint);
+  color: var(--ink);
+}
+
+.snapshot-action-btn.secondary {
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.snapshot-action-btn.close {
+  background: #ffffff;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.snapshot-action-btn.close:hover {
+  color: var(--ink);
+  background: #f1f5f9;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .snapshot-modal-backdrop {
+    padding: 8px;
+  }
+
+  .snapshot-modal-card {
+    max-height: 95vh;
+  }
+
+  .snapshot-modal-header {
+    padding: 10px 14px;
+  }
+
+  .snapshot-modal-heading {
+    font-size: 14px;
+  }
+
+  .snapshot-preview-area {
+    padding: 12px;
+    max-height: 52vh;
+    min-height: 240px;
+  }
+
+  .snapshot-preview-img {
+    max-height: 48vh;
+  }
+
+  .snapshot-modal-actions {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .snapshot-action-btn {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 10px;
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+  }
+
+  .snapshot-action-btn.close {
+    margin-left: 0;
+    flex: 1 1 100%;
+  }
+
+  .location-strip-actions {
+    gap: 6px;
+  }
+
+  .share-weather-btn {
+    height: 32px;
+    padding: 0 9px;
+    font-size: 9px;
+  }
+}
+
+
 
 
 
